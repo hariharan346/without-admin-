@@ -57,11 +57,14 @@ export const register = async (req, res) => {
  */
 export const login = async (req, res) => {
   const { email, password } = req.body;
+  console.log(`Login attempt for email: ${email}`); // DEBUG
 
   try {
     const user = await User.findOne({ email });
+    console.log("User found in database:", user); // DEBUG
 
     if (user && (await user.matchPassword(password))) {
+      console.log("Password matched. Sending token."); // DEBUG
       res.json({
         _id: user._id,
         name: user.name,
@@ -70,9 +73,11 @@ export const login = async (req, res) => {
         token: generateToken(user._id),
       });
     } else {
+      console.log("Invalid email or password."); // DEBUG
       res.status(401).json({ message: "Invalid email or password" });
     }
   } catch (error) {
+    console.error("Error during login:", error); // DEBUG
     res.status(500).json({ message: error.message });
   }
 };

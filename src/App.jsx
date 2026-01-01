@@ -17,6 +17,11 @@ import ServiceRequestPage from "./pages/ServiceRequestPage";
 import OpenServiceRequestPage from "./pages/OpenServiceRequestPage";
 import JobDetailsPage from "./pages/JobDetailsPage";
 import NotFound from "./pages/NotFound";
+import AdminLoginPage from "./pages/admin/AdminLoginPage";
+import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
+import AdminUsersPage from "./pages/admin/AdminUsersPage";
+import AdminVendorsPage from "./pages/admin/AdminVendorsPage";
+import AdminProtectedRoute from "./routes/AdminProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +56,14 @@ const App = () => (
             path="/vendor/dashboard"
             element={<VendorDashboard />}
           />
+        </Route>
+
+        {/* ADMIN */}
+        <Route path="/admin/login" element={<AdminLoginPage />} />
+        <Route element={<AdminProtectedRoute />}>
+          <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+          <Route path="/admin/users" element={<AdminUsersPage />} />
+          <Route path="/admin/vendors" element={<AdminVendorsPage />} />
         </Route>
 
         <Route path="*" element={<NotFound />} />

@@ -53,6 +53,8 @@ export const Navbar = () => {
                         <div className="w-8 h-8 rounded-full bg-primary-light flex items-center justify-center">
                           {user.role === "vendor" ? (
                             <Store className="w-4 h-4 text-primary" />
+                          ) : user.role === "admin" ? (
+                            <User className="w-4 h-4 text-primary" />
                           ) : (
                             <User className="w-4 h-4 text-primary" />
                           )}
@@ -68,12 +70,25 @@ export const Navbar = () => {
                           to={
                             user.role === "vendor"
                               ? "/vendor/dashboard"
+                              : user.role === "admin"
+                              ? "/admin/dashboard"
                               : "/customer/dashboard"
                           }
                         >
                           Dashboard
                         </Link>
                       </DropdownMenuItem>
+
+                      {user.role === "admin" && (
+                        <>
+                          <DropdownMenuItem asChild>
+                            <Link to="/admin/users">Users</Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link to="/admin/vendors">Vendors</Link>
+                          </DropdownMenuItem>
+                        </>
+                      )}
 
                       <DropdownMenuSeparator />
 

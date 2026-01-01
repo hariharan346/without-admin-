@@ -19,7 +19,7 @@ const ProtectedRoute = ({ role }) => {
   }
 
   // 🔒 ROLE CHECK
-  if (role && user.type !== role) {
+  if (role && user.role !== role) {
     return <Navigate to="/" replace />;
   }
 
@@ -27,3 +27,4 @@ const ProtectedRoute = ({ role }) => {
 };
 
 export default ProtectedRoute;
+

@@ -2,9 +2,27 @@ import mongoose from "mongoose";
 
 const jobSchema = new mongoose.Schema(
   {
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    vendorId: { type: mongoose.Schema.Types.ObjectId, ref: "Vendor" },
-    serviceId: String,
+    customer: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    vendor: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    service: {
+      type: String,
+      required: true,
+    },
+    description: {
+      type: String,
+      required: true,
+    },
+    date: {
+      type: String,
+      required: true,
+    },
     status: {
       type: String,
       enum: ["pending", "accepted", "rejected", "cancelled", "completed"],

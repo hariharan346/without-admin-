@@ -1,14 +1,19 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { categories } from "@/data/services";
+import api from "@/lib/axios";
+
+const fetchServices = async () => {
+  const { data } = await api.get("/services");
+  return data;
+};
 
 const VendorRegisterPage = () => {
   const [formData, setFormData] = useState({
@@ -16,16 +21,19 @@ const VendorRegisterPage = () => {
     email: "",
     phone: "",
     password: "",
-    shopName: "",
-    shopDescription: "",
+    companyName: "",
     location: "",
-    experience: "",
   });
   const [selectedServices, setSelectedServices] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const { data: services, isLoading: isLoadingServices } = useQuery({
+    queryKey: ["services"],
+    queryFn: fetchServices,
+  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -38,34 +46,34 @@ const VendorRegisterPage = () => {
       return;
     }
     setIsLoading(true);
-    const success = await register({
-      ...formData,
-      type: "vendor",
-      serviceIds: selectedServices,
-      isAvailable: true,
-    });
-    setIsLoading(false);
+    try {
+      await register({
+        ...formData,
+        role: "vendor",
+        services: selectedServices,
+      });
+      setIsLoading(false);
 
-    if (success) {
       toast({
         title: "Welcome!",
         description: "Your shop has been registered.",
       });
       navigate("/vendor/dashboard");
-    } else {
+    } catch (error) {
+      setIsLoading(false);
       toast({
         title: "Registration Failed",
-        description: "Email already exists.",
+        description: "Email already exists or invalid data.",
         variant: "destructive",
       });
     }
   };
 
-  const toggleService = (id) => {
+  const toggleService = (serviceName) => {
     setSelectedServices((prev) =>
-      prev.includes(id)
-        ? prev.filter((s) => s !== id)
-        : [...prev, id]
+      prev.includes(serviceName)
+        ? prev.filter((s) => s !== serviceName)
+        : [...prev, serviceName]
     );
   };
 
@@ -135,68 +143,44 @@ const VendorRegisterPage = () => {
               <div className="space-y-2">
                 <Label>Shop / Business Name</Label>
                 <Input
-                  value={formData.shopName}
+                  value={formData.companyName}
                   onChange={(e) =>
-                    setFormData({ ...formData, shopName: e.target.value })
+                    setFormData({ ...formData, companyName: e.target.value })
                   }
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label>Shop Description</Label>
-                <Textarea
-                  value={formData.shopDescription}
+                <Label>Location</Label>
+                <Input
+                  value={formData.location}
                   onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      shopDescription: e.target.value,
-                    })
+                    setFormData({ ...formData, location: e.target.value })
                   }
-                  rows={3}
+                  required
                 />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Location</Label>
-                  <Input
-                    value={formData.location}
-                    onChange={(e) =>
-                      setFormData({ ...formData, location: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Experience</Label>
-                  <Input
-                    placeholder="e.g., 5 years"
-                    value={formData.experience}
-                    onChange={(e) =>
-                      setFormData({ ...formData, experience: e.target.value })
-                    }
-                    required
-                  />
-                </div>
               </div>
 
               <div className="space-y-3">
                 <Label>Services Offered *</Label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-60 overflow-y-auto p-2">
-                  {categories
-                    .flatMap((c) => c.services)
-                    .map((s) => (
+                {isLoadingServices ? (
+                  <p>Loading services...</p>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-60 overflow-y-auto p-2">
+                    {services.map((s) => (
                       <label
-                        key={s.id}
+                        key={s._id}
                         className="flex items-center gap-2 text-sm cursor-pointer"
                       >
                         <Checkbox
-                          checked={selectedServices.includes(s.id)}
-                          onCheckedChange={() => toggleService(s.id)}
+                          checked={selectedServices.includes(s.name)}
+                          onCheckedChange={() => toggleService(s.name)}
                         />
                         {s.name}
                       </label>
                     ))}
-                </div>
+                  </div>
+                )}
               </div>
 
               <Button

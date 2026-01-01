@@ -1,25 +1,25 @@
 import { Link, useParams, useSearchParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { ReviewCard } from "@/components/cards/ReviewCard";
-import {
-  getVendorById,
-  getReviewsByVendor,
-  getServiceById,
-} from "@/data/services";
+import { getServiceById } from "@/data/services";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   ChevronLeft,
-  Star,
   MapPin,
-  Clock,
   Phone,
   CheckCircle2,
   XCircle,
   Store,
 } from "lucide-react";
+import api from "@/lib/axios";
+
+const fetchVendorById = async (vendorId) => {
+  const { data } = await api.get(`/vendors/${vendorId}`);
+  return data;
+};
 
 const VendorProfilePage = () => {
   const { vendorId } = useParams();
@@ -27,11 +27,29 @@ const VendorProfilePage = () => {
   const serviceId = searchParams.get("service");
   const { user, logout } = useAuth();
 
-  const vendor = getVendorById(vendorId || "");
-  const reviews = getReviewsByVendor(vendorId || "");
+  const {
+    data: vendor,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["vendor", vendorId],
+    queryFn: () => fetchVendorById(vendorId),
+  });
   const service = serviceId ? getServiceById(serviceId) : null;
 
-  if (!vendor) {
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navbar user={user} onLogout={logout} />
+        <main className="flex-1 flex items-center justify-center">
+          <p>Loading...</p>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (isError || !vendor) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar user={user} onLogout={logout} />
@@ -79,7 +97,7 @@ const VendorProfilePage = () => {
                     <div>
                       <div className="flex items-center gap-3">
                         <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-                          {vendor.name}
+                          {vendor.companyName}
                         </h1>
                         {vendor.isAvailable ? (
                           <Badge
@@ -97,7 +115,7 @@ const VendorProfilePage = () => {
                         )}
                       </div>
                       <p className="text-muted-foreground mt-2 max-w-2xl">
-                        {vendor.description}
+                        {vendor.user.name}
                       </p>
                     </div>
 
@@ -106,7 +124,7 @@ const VendorProfilePage = () => {
                       {vendor.isAvailable && (
                         <Button asChild variant="hero" size="lg">
                           <Link
-                            to={`/request/${vendor.id}${
+                            to={`/request/${vendor._id}${
                               serviceId ? `?service=${serviceId}` : ""
                             }`}
                           >
@@ -126,35 +144,10 @@ const VendorProfilePage = () => {
 
                   {/* Meta Info */}
                   <div className="flex flex-wrap items-center gap-6 mt-6">
-                    <div className="flex items-center gap-1">
-                      <Star className="w-5 h-5 fill-warning text-warning" />
-                      <span className="font-semibold text-lg">
-                        {vendor.rating}
-                      </span>
-                      <span className="text-muted-foreground">
-                        ({vendor.reviewCount} reviews)
-                      </span>
-                    </div>
                     <div className="flex items-center gap-1 text-muted-foreground">
                       <MapPin className="w-4 h-4" />
                       <span>{vendor.location}</span>
-                      <span className="text-primary font-medium">
-                        • {vendor.distance}
-                      </span>
                     </div>
-                    <div className="flex items-center gap-1 text-muted-foreground">
-                      <Clock className="w-4 h-4" />
-                      <span>{vendor.experience} experience</span>
-                    </div>
-                  </div>
-
-                  {/* Specializations */}
-                  <div className="flex flex-wrap gap-2 mt-4">
-                    {vendor.specializations.map((spec) => (
-                      <Badge key={spec} variant="secondary" className="font-normal">
-                        {spec}
-                      </Badge>
-                    ))}
                   </div>
                 </div>
               </div>
@@ -173,63 +166,19 @@ const VendorProfilePage = () => {
                   <h2 className="text-xl font-semibold text-foreground mb-4">
                     Services Offered
                   </h2>
-                  <div className="space-y-3">
-                    {vendor.serviceIds.map((sid) => {
-                      const s = getServiceById(sid);
-                      if (!s) return null;
-                      return (
-                        <Link
-                          key={sid}
-                          to={`/service/${sid}`}
-                          className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
-                        >
-                          <div className="w-10 h-10 rounded-lg bg-accent-light flex items-center justify-center">
-                            <s.icon className="w-5 h-5 text-accent" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-foreground">{s.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {s.description}
-                            </p>
-                          </div>
-                        </Link>
-                      );
-                    })}
+                  <div className="flex flex-wrap gap-2">
+                    {vendor.services.map((s) => (
+                      <Badge key={s} variant="secondary">
+                        {s}
+                      </Badge>
+                    ))}
                   </div>
-                </div>
-
-                {/* Reviews */}
-                <div className="bg-card rounded-2xl p-6 border border-border">
-                  <h2 className="text-xl font-semibold text-foreground mb-4">
-                    Customer Reviews ({reviews.length})
-                  </h2>
-                  {reviews.length > 0 ? (
-                    <div className="space-y-4">
-                      {reviews.map((review) => (
-                        <ReviewCard key={review.id} review={review} />
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground">No reviews yet.</p>
-                  )}
                 </div>
               </div>
 
               {/* Sidebar */}
               <div className="space-y-6">
                 <div className="bg-card rounded-2xl p-6 border border-border sticky top-24">
-                  <h3 className="text-lg font-semibold text-foreground mb-2">
-                    Price Range
-                  </h3>
-                  <p className="text-2xl font-bold text-primary">
-                    {vendor.priceRange}
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Final price depends on the scope of work
-                  </p>
-
-                  <hr className="my-6 border-border" />
-
                   <h3 className="text-lg font-semibold text-foreground mb-3">
                     Quick Contact
                   </h3>
@@ -251,7 +200,7 @@ const VendorProfilePage = () => {
                       className="w-full mt-6"
                     >
                       <Link
-                        to={`/request/${vendor.id}${
+                        to={`/request/${vendor._id}${
                           serviceId ? `?service=${serviceId}` : ""
                         }`}
                       >

@@ -1,13 +1,53 @@
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { CategoryCard } from "@/components/cards/CategoryCard";
-import { categories } from "@/data/services";
 import { useAuth } from "@/context/AuthContext";
 import { ChevronLeft } from "lucide-react";
+import api from "@/lib/axios";
+import { categories as staticCategories } from "@/data/services"; // Import static categories
+
+const fetchServices = async () => {
+  const { data } = await api.get("/services");
+  return data;
+};
 
 const CategoriesPage = () => {
   const { user, logout } = useAuth();
+
+  const {
+    data: services,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["services"],
+    queryFn: fetchServices,
+  });
+
+  const categories = services
+    ? Object.values(
+        services.reduce((acc, service) => {
+          if (!acc[service.category]) {
+            acc[service.category] = {
+              id: service.category.toLowerCase().replace(/ /g, "-"),
+              name: service.category,
+              services: [],
+            };
+          }
+          acc[service.category].services.push(service);
+          return acc;
+        }, {})
+      ).map((dynamicCategory) => {
+        // Merge with static category data to get icon and description
+        const staticCategory = staticCategories.find(
+          (sc) => sc.name === dynamicCategory.name
+        );
+        return staticCategory
+          ? { ...dynamicCategory, icon: staticCategory.icon, description: staticCategory.description }
+          : dynamicCategory;
+      })
+    : [];
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -36,6 +76,8 @@ const CategoriesPage = () => {
         {/* Categories Grid */}
         <section className="py-12">
           <div className="container mx-auto px-4">
+            {isLoading && <p>Loading categories...</p>}
+            {isError && <p>Error fetching categories.</p>}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {categories.map((category, index) => (
                 <CategoryCard

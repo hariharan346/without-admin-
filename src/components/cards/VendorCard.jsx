@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { getServiceById } from "@/data/services";
 import { Button } from "@/components/ui/button";
 import { Star, MapPin, Clock, Phone, CheckCircle2, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +16,7 @@ export const VendorCard = ({ vendor, serviceId, index = 0 }) => {
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-semibold text-lg text-foreground">
-                  {vendor.name}
+                  {vendor.user.name}
                 </h3>
                 {vendor.isAvailable ? (
                   <Badge
@@ -35,58 +34,25 @@ export const VendorCard = ({ vendor, serviceId, index = 0 }) => {
                 )}
               </div>
               <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                {vendor.description}
+                {vendor.companyName}
               </p>
             </div>
           </div>
 
           {/* Rating & Location */}
           <div className="flex flex-wrap items-center gap-4 mt-4">
-            <div className="flex items-center gap-1">
-              <Star className="w-4 h-4 fill-warning text-warning" />
-              <span className="font-semibold text-sm">{vendor.rating}</span>
-              <span className="text-muted-foreground text-sm">
-                ({vendor.reviewCount} reviews)
-              </span>
-            </div>
             <div className="flex items-center gap-1 text-muted-foreground text-sm">
               <MapPin className="w-4 h-4" />
               <span>{vendor.location}</span>
-              <span className="text-primary font-medium">• {vendor.distance}</span>
-            </div>
-            <div className="flex items-center gap-1 text-muted-foreground text-sm">
-              <Clock className="w-4 h-4" />
-              <span>{vendor.experience} experience</span>
             </div>
           </div>
-
-          {/* Specializations */}
-          <div className="flex flex-wrap gap-2 mt-4">
-            {vendor.specializations.map((spec) => (
-              <Badge
-                key={spec}
-                variant="secondary"
-                className="text-xs font-normal"
-              >
-                {spec}
-              </Badge>
-            ))}
-          </div>
-
-          {/* Price Range */}
-          <p className="text-sm mt-3">
-            <span className="text-muted-foreground">Price Range: </span>
-            <span className="font-semibold text-primary">
-              {vendor.priceRange}
-            </span>
-          </p>
         </div>
 
         {/* Actions */}
         <div className="flex flex-col gap-2 lg:w-40">
           <Button asChild variant="default" className="w-full">
             <Link
-              to={`/vendor/${vendor.id}${
+              to={`/vendor/${vendor._id}${
                 serviceId ? `?service=${serviceId}` : ""
               }`}
             >
@@ -96,7 +62,7 @@ export const VendorCard = ({ vendor, serviceId, index = 0 }) => {
           {vendor.isAvailable && (
             <Button asChild variant="hero" className="w-full">
               <Link
-                to={`/request/${vendor.id}${
+                to={`/request/${vendor._id}${
                   serviceId ? `?service=${serviceId}` : ""
                 }`}
               >

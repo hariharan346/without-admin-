@@ -51,7 +51,7 @@ export const Navbar = () => {
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" className="gap-2">
                         <div className="w-8 h-8 rounded-full bg-primary-light flex items-center justify-center">
-                          {user.type === "vendor" ? (
+                          {user.role === "vendor" ? (
                             <Store className="w-4 h-4 text-primary" />
                           ) : (
                             <User className="w-4 h-4 text-primary" />
@@ -66,7 +66,7 @@ export const Navbar = () => {
                       <DropdownMenuItem asChild>
                         <Link
                           to={
-                            user.type === "vendor"
+                            user.role === "vendor"
                               ? "/vendor/dashboard"
                               : "/customer/dashboard"
                           }

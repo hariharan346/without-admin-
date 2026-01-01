@@ -23,31 +23,27 @@ const LoginPage = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    const success = await login(email, password);
+    try {
+      const loggedInUser = await login(email, password);
+      setIsLoading(false);
 
-    setIsLoading(false);
+      toast({
+        title: "Welcome back!",
+        description: "Login successful",
+      });
 
-    if (!success) {
+      if (loggedInUser.role === "vendor") {
+        navigate("/vendor/dashboard");
+      } else {
+        navigate("/customer/dashboard");
+      }
+    } catch (error) {
+      setIsLoading(false);
       toast({
         title: "Login Failed",
         description: "Invalid email or password",
         variant: "destructive",
       });
-      return;
-    }
-
-    toast({
-      title: "Welcome back!",
-      description: "Login successful",
-    });
-
-    // Redirect based on actual user type from backend
-    const storedUser = JSON.parse(localStorage.getItem("user"));
-
-    if (storedUser?.type === "vendor") {
-      navigate("/vendor/dashboard");
-    } else {
-      navigate("/customer/dashboard");
     }
   };
 

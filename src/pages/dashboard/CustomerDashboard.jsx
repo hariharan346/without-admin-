@@ -1,9 +1,10 @@
-import { Link, Navigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { useAuth } from "@/context/AuthContext";
-import { getVendorById, getServiceById } from "@/data/services";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Clock,
   CheckCircle2,
@@ -11,17 +12,23 @@ import {
   AlertCircle,
   MapPin,
 } from "lucide-react";
+import api from "@/lib/axios";
+
+const fetchUserJobs = async () => {
+  const { data } = await api.get("/jobs/my");
+  return data;
+};
 
 const CustomerDashboard = () => {
-  const { user, logout, serviceRequests, isAuthenticated } = useAuth();
-
-  if (!isAuthenticated || user?.type !== "customer") {
-    return <Navigate to="/auth/login" replace />;
-  }
-
-  const customerRequests = serviceRequests.filter(
-    (r) => r.customerId === user.id
-  );
+  const { user, logout } = useAuth();
+  const {
+    data: jobs,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["userJobs"],
+    queryFn: fetchUserJobs,
+  });
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -56,8 +63,6 @@ const CustomerDashboard = () => {
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
-    
-    
   };
 
   return (
@@ -66,63 +71,52 @@ const CustomerDashboard = () => {
       <main className="flex-1 py-10">
         <div className="container mx-auto px-4">
           <h1 className="text-3xl font-bold text-foreground mb-2">
-            Welcome, {user.name}
+            Welcome, {user?.name}
           </h1>
           <p className="text-muted-foreground mb-8">
             Manage your service requests
           </p>
 
           <div className="bg-card rounded-2xl p-6 border border-border">
-            <h2 className="text-xl font-semibold mb-4">
-              Your Service Requests ({customerRequests.length})
-            </h2>
-            {customerRequests.length > 0 ? (
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">
+                Your Service Requests ({jobs?.length || 0})
+              </h2>
+              <Button asChild>
+                <Link to="/open-request">Create Open Request</Link>
+              </Button>
+            </div>
+            {isLoading ? (
+              <p>Loading your jobs...</p>
+            ) : isError ? (
+              <p>Error fetching your jobs.</p>
+            ) : jobs && jobs.length > 0 ? (
               <div className="space-y-4">
-                {customerRequests.map((req) => {
-                  const vendor = getVendorById(req.vendorId);
-                  const service = getServiceById(req.serviceId);
-                  return (
+                {jobs.map((job) => (
+                  <Link to={`/job/${job._id}`} key={job._id}>
                     <div
-                      key={req.id}
-                      className="p-4 bg-muted/50 rounded-xl"
+                      className="p-4 bg-muted/50 rounded-xl hover:bg-muted transition-colors cursor-pointer"
                     >
                       <div className="flex flex-wrap items-start justify-between gap-4">
                         <div>
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="font-semibold">
-                              {service?.name}
-                            </span>
-                            {req.isUrgent && (
-                              <Badge
-                                variant="destructive"
-                                className="text-xs"
-                              >
-                                <AlertCircle className="w-3 h-3 mr-1" />
-                                Urgent
-                              </Badge>
-                            )}
+                            <span className="font-semibold">{job.service}</span>
                           </div>
                           <p className="text-sm text-muted-foreground">
-                            {vendor?.name}
+                            {job.vendor?.name || "Pending Vendor"}
                           </p>
-                          <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                            <MapPin className="w-3 h-3" />
-                            {req.location}
-                          </p>
-                          <p className="text-sm mt-2">
-                            {req.description}
-                          </p>
+                          <p className="text-sm mt-2">{job.description}</p>
                         </div>
                         <div className="text-right">
-                          {getStatusBadge(req.status)}
+                          {getStatusBadge(job.status)}
                           <p className="text-xs text-muted-foreground mt-2">
-                            {new Date(req.createdAt).toLocaleDateString()}
+                            {new Date(job.createdAt).toLocaleDateString()}
                           </p>
                         </div>
                       </div>
                     </div>
-                  );
-                })}
+                  </Link>
+                ))}
               </div>
             ) : (
               <p className="text-muted-foreground">

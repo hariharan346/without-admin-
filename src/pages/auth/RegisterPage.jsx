@@ -21,19 +21,19 @@ const RegisterPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    const success = await register({
-      name,
-      email,
-      phone,
-      password,
-      type: "user",
-    });
-    setIsLoading(false);
+    try {
+      await register({
+        name,
+        email,
+        password,
+        role: "user",
+      });
+      setIsLoading(false);
 
-    if (success) {
       toast({ title: "Welcome!", description: "Registration successful." });
       navigate("/customer/dashboard");
-    } else {
+    } catch (error) {
+      setIsLoading(false);
       toast({
         title: "Registration Failed",
         description: "Email already exists.",
@@ -74,15 +74,6 @@ const RegisterPage = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input
-                  id="phone"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
                   required
                 />
               </div>

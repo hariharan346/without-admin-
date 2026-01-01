@@ -1,8 +1,7 @@
-import { Navigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { useAuth } from "@/context/AuthContext";
-import { getServiceById } from "@/data/services";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -11,31 +10,53 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
-  AlertCircle,
-  MapPin,
   Store,
 } from "lucide-react";
 import { useState } from "react";
+import api from "@/lib/axios";
+
+const fetchVendorJobs = async () => {
+  const { data } = await api.get("/jobs/vendor");
+  return data;
+};
+
+const fetchPendingJobs = async () => {
+  const { data } = await api.get("/jobs/vendor/pending");
+  return data;
+};
+
+const updateJobStatus = async ({ jobId, status }) => {
+  const { data } = await api.patch(`/jobs/${jobId}/${status}`);
+  return data;
+};
 
 const VendorDashboard = () => {
-  const {
-    user,
-    logout,
-    serviceRequests,
-    updateRequestStatus,
-    isAuthenticated,
-  } = useAuth();
+  const { user, logout } = useAuth();
+  const queryClient = useQueryClient();
 
-  const [isAvailable, setIsAvailable] = useState(user?.isAvailable ?? true);
+  const [isAvailable, setIsAvailable] = useState(user?.vendor?.isAvailable ?? true);
 
-  if (!isAuthenticated || user?.type !== "vendor") {
-    return <Navigate to="/auth/login" replace />;
-  }
+  const { data: assignedJobs, isLoading: isLoadingAssigned } = useQuery({
+    queryKey: ["vendorJobs"],
+    queryFn: fetchVendorJobs,
+  });
 
-  // In real app, filter by vendor's actual ID from the vendors list
-  const vendorRequests = serviceRequests.filter(
-    (r) => r.vendorId === "v1" || r.customerId !== user.id
-  );
+  const { data: pendingJobs, isLoading: isLoadingPending } = useQuery({
+    queryKey: ["pendingJobs"],
+    queryFn: fetchPendingJobs,
+  });
+
+  const mutation = useMutation({
+    mutationFn: updateJobStatus,
+    onSuccess: () => {
+      queryClient.invalidateQueries("vendorJobs");
+      queryClient.invalidateQueries("pendingJobs");
+    },
+  });
+
+  const handleStatusUpdate = (jobId, status) => {
+    mutation.mutate({ jobId, status });
+  };
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -61,16 +82,65 @@ const VendorDashboard = () => {
           </Badge>
         );
       case "cancelled":
+      case "rejected":
         return (
           <Badge variant="destructive">
             <XCircle className="w-3 h-3 mr-1" />
-            Cancelled
+            {status.charAt(0).toUpperCase() + status.slice(1)}
           </Badge>
         );
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
   };
+
+  const JobCard = ({ job, isPending }) => (
+    <div className="p-4 bg-muted/50 rounded-xl">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-semibold">{job.service}</span>
+            {getStatusBadge(job.status)}
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Customer: {job.customer.name}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Email: {job.customer.email}
+          </p>
+          <p className="text-sm mt-2">{job.description}</p>
+        </div>
+        <div className="flex gap-2">
+          {isPending && (
+            <>
+              <Button
+                size="sm"
+                onClick={() => handleStatusUpdate(job._id, "accept")}
+              >
+                Accept
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleStatusUpdate(job._id, "reject")}
+              >
+                Reject
+              </Button>
+            </>
+          )}
+          {job.status === "accepted" && (
+            <Button
+              size="sm"
+              variant="success"
+              onClick={() => handleStatusUpdate(job._id, "complete")}
+            >
+              Mark Complete
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -81,10 +151,10 @@ const VendorDashboard = () => {
             <div>
               <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
                 <Store className="w-8 h-8 text-primary" />
-                {user.shopName || user.name}
+                {user?.vendor?.companyName || user?.name}
               </h1>
               <p className="text-muted-foreground mt-1">
-                {user.location}
+                {user?.vendor?.location}
               </p>
             </div>
             <div className="flex items-center gap-3 p-4 bg-card rounded-xl border border-border">
@@ -95,109 +165,43 @@ const VendorDashboard = () => {
               />
               <Label htmlFor="available" className="cursor-pointer">
                 {isAvailable ? (
-                  <span className="text-success font-medium">
-                    Available
-                  </span>
+                  <span className="text-success font-medium">Available</span>
                 ) : (
-                  <span className="text-muted-foreground">
-                    Unavailable
-                  </span>
+                  <span className="text-muted-foreground">Unavailable</span>
                 )}
               </Label>
             </div>
           </div>
 
-          <div className="bg-card rounded-2xl p-6 border border-border">
-            <h2 className="text-xl font-semibold mb-4">
-              Incoming Requests
-            </h2>
-            {vendorRequests.length > 0 ? (
-              <div className="space-y-4">
-                {vendorRequests.map((req) => {
-                  const service = getServiceById(req.serviceId);
-                  return (
-                    <div
-                      key={req.id}
-                      className="p-4 bg-muted/50 rounded-xl"
-                    >
-                      <div className="flex flex-wrap items-start justify-between gap-4">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-semibold">
-                              {service?.name}
-                            </span>
-                            {req.isUrgent && (
-                              <Badge
-                                variant="destructive"
-                                className="text-xs"
-                              >
-                                <AlertCircle className="w-3 h-3 mr-1" />
-                                Urgent
-                              </Badge>
-                            )}
-                            {getStatusBadge(req.status)}
-                          </div>
-                          <p className="text-sm text-muted-foreground flex items-center gap-1">
-                            <MapPin className="w-3 h-3" />
-                            {req.location}
-                          </p>
-                          <p className="text-sm mt-2">
-                            {req.description}
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                          {req.status === "pending" && (
-                            <>
-                              <Button
-                                size="sm"
-                                onClick={() =>
-                                  updateRequestStatus(
-                                    req.id,
-                                    "accepted"
-                                  )
-                                }
-                              >
-                                Accept
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() =>
-                                  updateRequestStatus(
-                                    req.id,
-                                    "cancelled"
-                                  )
-                                }
-                              >
-                                Reject
-                              </Button>
-                            </>
-                          )}
-                          {req.status === "accepted" && (
-                            <Button
-                              size="sm"
-                              variant="success"
-                              onClick={() =>
-                                updateRequestStatus(
-                                  req.id,
-                                  "completed"
-                                )
-                              }
-                            >
-                              Mark Complete
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-muted-foreground">
-                No incoming requests yet.
-              </p>
-            )}
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="bg-card rounded-2xl p-6 border border-border">
+              <h2 className="text-xl font-semibold mb-4">Incoming Requests</h2>
+              {isLoadingPending ? (
+                <p>Loading requests...</p>
+              ) : pendingJobs && pendingJobs.length > 0 ? (
+                <div className="space-y-4">
+                  {pendingJobs.map((job) => (
+                    <JobCard key={job._id} job={job} isPending />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground">No incoming requests.</p>
+              )}
+            </div>
+            <div className="bg-card rounded-2xl p-6 border border-border">
+              <h2 className="text-xl font-semibold mb-4">Your Jobs</h2>
+              {isLoadingAssigned ? (
+                <p>Loading your jobs...</p>
+              ) : assignedJobs && assignedJobs.length > 0 ? (
+                <div className="space-y-4">
+                  {assignedJobs.map((job) => (
+                    <JobCard key={job._id} job={job} />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground">You have no assigned jobs.</p>
+              )}
+            </div>
           </div>
         </div>
       </main>

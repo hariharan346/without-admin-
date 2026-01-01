@@ -1,18 +1,49 @@
 import { Link, useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ServiceCard } from "@/components/cards/ServiceCard";
-import { getCategoryById } from "@/data/services";
+import { categories as staticCategories } from "@/data/services";
 import { useAuth } from "@/context/AuthContext";
 import { ChevronLeft } from "lucide-react";
+import api from "@/lib/axios";
+
+const fetchServices = async () => {
+  const { data } = await api.get("/services");
+  return data;
+};
 
 const CategoryPage = () => {
   const { categoryId } = useParams();
   const { user, logout } = useAuth();
 
-  const category = getCategoryById(categoryId || "");
+  const {
+    data: services,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["services"],
+    queryFn: fetchServices,
+  });
 
-  if (!category) {
+  const category = staticCategories.find((c) => c.id === categoryId);
+  const filteredServices = services?.filter(
+    (s) => s.category === category?.name
+  );
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navbar user={user} onLogout={logout} />
+        <main className="flex-1 flex items-center justify-center">
+          <p>Loading...</p>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (isError || !category) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar user={user} onLogout={logout} />
@@ -21,10 +52,7 @@ const CategoryPage = () => {
             <h1 className="text-2xl font-bold text-foreground mb-4">
               Category Not Found
             </h1>
-            <Link
-              to="/categories"
-              className="text-primary hover:underline"
-            >
+            <Link to="/categories" className="text-primary hover:underline">
               Browse all categories
             </Link>
           </div>
@@ -72,16 +100,22 @@ const CategoryPage = () => {
         <section className="py-12">
           <div className="container mx-auto px-4">
             <h2 className="text-xl font-semibold text-foreground mb-6">
-              Available Services ({category.services.length})
+              Available Services ({filteredServices.length})
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {category.services.map((service, index) => (
-                <ServiceCard
-                  key={service.id}
-                  service={service}
-                  index={index}
-                />
-              ))}
+              {filteredServices.map((service, index) => {
+                const staticService = category.services.find(
+                  (s) => s.name === service.name
+                );
+                if (!staticService) return null;
+                return (
+                  <ServiceCard
+                    key={service._id}
+                    service={{ ...service, ...staticService }}
+                    index={index}
+                  />
+                );
+              })}
             </div>
           </div>
         </section>

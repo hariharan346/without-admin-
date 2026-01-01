@@ -7,7 +7,8 @@ import {
   completeJob,
   getUserJobs,
   getVendorJobs,
-  getJobWithVendor,
+  getPendingJobs,
+  getJobById,
 } from "../controllers/job.controller.js";
 
 import { protect } from "../middleware/auth.middleware.js";
@@ -20,11 +21,12 @@ const router = express.Router();
 router.post("/", protect, createJob);
 router.get("/my", protect, getUserJobs);
 router.patch("/:jobId/cancel", protect, cancelJob);
-router.get("/:jobId", protect, getJobWithVendor);
+
 /**
  * VENDOR ROUTES
  */
 router.get("/vendor", protect, getVendorJobs);
+router.get("/vendor/pending", protect, getPendingJobs);
 router.patch("/:jobId/accept", protect, acceptJob);
 router.patch("/:jobId/reject", protect, rejectJob);
 router.patch("/:jobId/complete", protect, completeJob);
@@ -32,6 +34,7 @@ router.patch("/:jobId/complete", protect, completeJob);
 /**
  * COMMON
  */
-router.get("/:jobId", protect, getJobWithVendor);
+router.get("/:jobId", protect, getJobById);
 
 export default router;
+

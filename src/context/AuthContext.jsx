@@ -32,31 +32,32 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const res = await api.post("/auth/login", { email, password });
-
       localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
-
-      setUser(res.data.user);
-      return true;
-    } catch (err) {
-      return false;
+      // Let the useEffect handle the user state
+      const meRes = await api.get("/auth/me");
+      setUser(meRes.data);
+      return meRes.data;
+    } catch (error) {
+      throw error;
     }
   };
 
   // ✅ REGISTER
   const register = async (data) => {
     try {
-      await api.post("/auth/register", data);
-      return true;
-    } catch {
-      return false;
+      const res = await api.post("/auth/register", data);
+      localStorage.setItem("token", res.data.token);
+      const meRes = await api.get("/auth/me");
+      setUser(meRes.data);
+      return meRes.data;
+    } catch (error) {
+      throw error;
     }
   };
 
   // ✅ LOGOUT
-  const logout = () => {
+  const logout = async () => {
     localStorage.removeItem("token");
-    localStorage.removeItem("user");
     setUser(null);
   };
 

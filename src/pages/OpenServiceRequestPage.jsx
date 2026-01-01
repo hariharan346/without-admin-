@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useParams, useSearchParams, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -15,12 +15,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronLeft, Store, MapPin, AlertTriangle } from "lucide-react";
+import { ChevronLeft, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import api from "@/lib/axios";
 
-const fetchVendorById = async (vendorId) => {
-  const { data } = await api.get(`/vendors/${vendorId}`);
+const fetchServices = async () => {
+  const { data } = await api.get("/services");
   return data;
 };
 
@@ -29,25 +29,17 @@ const createJob = async (jobData) => {
   return data;
 };
 
-const ServiceRequestPage = () => {
-  const { vendorId } = useParams();
-  const [searchParams] = useSearchParams();
-  const serviceIdFromUrl = searchParams.get("service");
-
+const OpenServiceRequestPage = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const {
-    data: vendor,
-    isLoading: isVendorLoading,
-    isError: isVendorError,
-  } = useQuery({
-    queryKey: ["vendor", vendorId],
-    queryFn: () => fetchVendorById(vendorId),
+  const { data: services, isLoading: isLoadingServices } = useQuery({
+    queryKey: ["services"],
+    queryFn: fetchServices,
   });
 
-  const [selectedService, setSelectedService] = useState(serviceIdFromUrl || "");
+  const [selectedService, setSelectedService] = useState("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState("");
 
@@ -56,9 +48,9 @@ const ServiceRequestPage = () => {
     onSuccess: () => {
       toast({
         title: "Request Submitted!",
-        description: "Your service request has been sent to the vendor.",
+        description: "Your open service request has been created.",
       });
-      navigate("/dashboard/customer");
+      navigate("/customer/dashboard");
     },
     onError: () => {
       toast({
@@ -68,37 +60,6 @@ const ServiceRequestPage = () => {
       });
     },
   });
-
-  if (isVendorLoading) {
-    return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <Navbar user={user} onLogout={logout} />
-        <main className="flex-1 flex items-center justify-center">
-          <p>Loading...</p>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (isVendorError || !vendor) {
-    return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <Navbar user={user} onLogout={logout} />
-        <main className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-foreground mb-4">
-              Vendor Not Found
-            </h1>
-            <Link to="/categories" className="text-primary hover:underline">
-              Browse services
-            </Link>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -123,7 +84,6 @@ const ServiceRequestPage = () => {
     }
 
     mutation.mutate({
-      vendor: vendor.user._id,
       service: selectedService,
       description,
       date,
@@ -137,37 +97,20 @@ const ServiceRequestPage = () => {
       <main className="flex-1 py-10">
         <div className="container mx-auto px-4 max-w-2xl">
           <Link
-            to={`/vendor/${vendor._id}${
-              selectedService ? `?service=${selectedService}` : ""
-            }`}
+            to="/customer/dashboard"
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
           >
             <ChevronLeft className="w-4 h-4" />
-            Back to {vendor.companyName}
+            Back to Dashboard
           </Link>
 
           <div className="bg-card rounded-2xl p-6 md:p-8 border border-border shadow-md">
             <h1 className="text-2xl font-bold text-foreground mb-2">
-              Request Service
+              Create an Open Service Request
             </h1>
             <p className="text-muted-foreground mb-6">
-              Fill in the details below to send a service request
+              This request will be visible to all relevant vendors.
             </p>
-
-            {/* Vendor Info */}
-            <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-xl mb-6">
-              <div className="w-12 h-12 rounded-xl bg-primary-light flex items-center justify-center">
-                <Store className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <p className="font-semibold text-foreground">
-                  {vendor.companyName}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {vendor.location}
-                </p>
-              </div>
-            </div>
 
             {!user && (
               <div className="flex items-start gap-3 p-4 bg-warning/10 border border-warning/20 rounded-xl mb-6">
@@ -196,21 +139,25 @@ const ServiceRequestPage = () => {
               {/* Service Selection */}
               <div className="space-y-2">
                 <Label htmlFor="service">Service Type *</Label>
-                <Select
-                  value={selectedService}
-                  onValueChange={setSelectedService}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a service" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {vendor.services.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {s}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {isLoadingServices ? (
+                  <p>Loading services...</p>
+                ) : (
+                  <Select
+                    value={selectedService}
+                    onValueChange={setSelectedService}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a service" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {services.map((s) => (
+                        <SelectItem key={s._id} value={s.name}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
 
               {/* Problem Description */}
@@ -245,7 +192,7 @@ const ServiceRequestPage = () => {
                 className="w-full"
                 disabled={mutation.isPending}
               >
-                {mutation.isPending ? "Submitting..." : "Submit Request"}
+                {mutation.isPending ? "Submitting..." : "Submit Open Request"}
               </Button>
             </form>
           </div>
@@ -257,4 +204,4 @@ const ServiceRequestPage = () => {
   );
 };
 
-export default ServiceRequestPage;
+export default OpenServiceRequestPage;

@@ -1,12 +1,13 @@
 import { useState, useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { VendorCard } from "@/components/cards/VendorCard";
 import {
   getServiceById,
-  getVendorsByService,
   getCategoryById,
+  getAllServices,
 } from "@/data/services";
 import { useAuth } from "@/context/AuthContext";
 import { ChevronLeft, Filter, SlidersHorizontal } from "lucide-react";
@@ -20,48 +21,58 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import api from "@/lib/axios";
+
+const fetchVendorsByService = async (serviceId) => {
+  const { data } = await api.get(`/vendors?service=${serviceId}`);
+  return data;
+};
 
 const ServicePage = () => {
   const { serviceId } = useParams();
   const { user, logout } = useAuth();
 
-  const [sortBy, setSortBy] = useState("rating");
   const [showAvailableOnly, setShowAvailableOnly] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
-  const service = getServiceById(serviceId || "");
+  // This is a workaround to get the service details
+  const allServices = getAllServices();
+  const service = allServices.find((s) => s.id === serviceId);
   const category = service ? getCategoryById(service.categoryId) : null;
-  const vendors = getVendorsByService(serviceId || "");
+
+  const {
+    data: vendors,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["vendors", serviceId],
+    queryFn: () => fetchVendorsByService(service.name),
+    enabled: !!service,
+  });
 
   const filteredVendors = useMemo(() => {
+    if (!vendors) return [];
     let result = [...vendors];
 
     if (showAvailableOnly) {
       result = result.filter((v) => v.isAvailable);
     }
 
-    switch (sortBy) {
-      case "rating":
-        result.sort((a, b) => b.rating - a.rating);
-        break;
-      case "reviews":
-        result.sort((a, b) => b.reviewCount - a.reviewCount);
-        break;
-      case "distance":
-        result.sort(
-          (a, b) =>
-            parseFloat(a.distance.replace(" km", "")) -
-            parseFloat(b.distance.replace(" km", ""))
-        );
-        break;
-      default:
-        break;
-    }
-
     return result;
-  }, [vendors, sortBy, showAvailableOnly]);
+  }, [vendors, showAvailableOnly]);
 
-  if (!service) {
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navbar user={user} onLogout={logout} />
+        <main className="flex-1 flex items-center justify-center">
+          <p>Loading...</p>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+  if (isError || !service) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar user={user} onLogout={logout} />
@@ -152,18 +163,6 @@ const ServicePage = () => {
                       Available Only
                     </Label>
                   </div>
-
-                  <Select value={sortBy} onValueChange={setSortBy}>
-                    <SelectTrigger className="w-[160px]">
-                      <SlidersHorizontal className="w-4 h-4 mr-2" />
-                      <SelectValue placeholder="Sort by" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="rating">Top Rated</SelectItem>
-                      <SelectItem value="reviews">Most Reviewed</SelectItem>
-                      <SelectItem value="distance">Nearest First</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
             </div>
@@ -173,7 +172,7 @@ const ServicePage = () => {
               <div className="space-y-4">
                 {filteredVendors.map((vendor, index) => (
                   <VendorCard
-                    key={vendor.id}
+                    key={vendor._id}
                     vendor={vendor}
                     serviceId={serviceId}
                     index={index}

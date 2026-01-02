@@ -1,76 +1,170 @@
-# Welcome to project
+Raise2Solve is a full-stack MERN (MongoDB, Express, React, Node.js) web application that connects customers with verified service providers (vendors).
+It supports role-based authentication, secure dashboards, and admin management for a real-world service booking platform.
 
-## Project info
+📌 Key Features
+👤 Customer
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+Register & login securely
 
-## How can I edit this code?
+Browse service categories
 
-There are several ways of editing your application.
+View vendor profiles
 
-**Use Lovable**
+Raise service requests
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+Track job/request status
 
-Changes made via Lovable will be committed automatically to this repo.
+🏪 Vendor
 
-**Use your preferred IDE**
+Vendor registration with business details
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+Vendor dashboard
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+Accept & manage service requests
 
-Follow these steps:
+Control availability status
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+🛠 Admin
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+Secure admin login
 
-# Step 3: Install the necessary dependencies.
-npm i
+Manage users & vendors
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+Platform control & moderation
+
+Role-based protected routes
+
+🔐 Authentication & Security
+
+JWT-based authentication
+
+Role-based access control (User / Vendor / Admin)
+
+Protected frontend & backend routes
+
+Password hashing using bcrypt
+
+🧱 Tech Stack
+Frontend
+
+React (Vite)
+
+JavaScript (JSX)
+
+Tailwind CSS
+
+shadcn/ui
+
+React Router
+
+Axios
+
+Backend
+
+Node.js
+
+Express.js
+
+MongoDB Atlas
+
+Mongoose
+
+JWT Authentication
+
+bcryptjs
+
+📂 Project Structure
+raise2solve/
+│
+├── backend/
+│   ├── controllers/
+│   ├── models/
+│   ├── routes/
+│   ├── middleware/
+│   ├── utils/
+│   └── server.js
+│
+├── frontend/
+│   ├── src/
+│   │   ├── pages/
+│   │   ├── components/
+│   │   ├── context/
+│   │   ├── routes/
+│   │   └── lib/
+│   └── main.jsx
+│
+└── README.md
+
+⚙️ Environment Variables
+
+Create a .env file inside backend/:
+
+PORT=5000
+MONGO_URI=your_mongodb_atlas_url
+JWT_SECRET=your_jwt_secret
+
+▶️ Run Locally
+1️⃣ Clone the Repository
+git clone https://github.com/your-username/raise2solve.git
+
+2️⃣ Backend Setup
+cd backend
+npm install
 npm run dev
-```
 
-**Edit a file directly in GitHub**
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Backend runs on:
 
-**Use GitHub Codespaces**
+http://localhost:5000
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+3️⃣ Frontend Setup
+cd frontend
+npm install
+npm run dev
 
-## What technologies are used for this project?
 
-This project is built with:
+Frontend runs on:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+http://localhost:8080
 
-## How can I deploy this project?
+🔑 Authentication Flow (Simple)
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+User logs in → JWT token generated
 
-## Can I connect a custom domain to my Lovable project?
+Token stored in browser
 
-Yes, you can!
+Axios automatically sends token in headers
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+Backend verifies token
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
-"# mern-testing-26" 
-"# mern-testing-26" 
-# without-admin-
+Role-based access is enforced
+
+🛡 Role-Based Access
+Role	Access
+User	Customer Dashboard
+Vendor	Vendor Dashboard
+Admin	Admin Dashboard
+📦 Sample API Endpoints
+POST   /api/auth/login
+POST   /api/auth/register
+GET    /api/auth/me
+GET    /api/vendors
+GET    /api/jobs
+
+🚀 Future Enhancements
+
+Refresh token authentication
+
+Admin analytics dashboard
+
+Real-time notifications
+
+Payment gateway integration
+
+In-app chat between users & vendors
+
+👨‍💻 Author
+
+Hariharan
+MERN Stack Developer
+📍 India

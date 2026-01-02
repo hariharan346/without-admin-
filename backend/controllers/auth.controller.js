@@ -7,7 +7,7 @@ import jwt from "jsonwebtoken";
 /**
  * REGISTER
  */
-export const register = async (req, res) => {
+export const register = async (req, res) => {   
   const { name, email, password, role, companyName, phone, services, location } =
     req.body;
 

@@ -3,6 +3,8 @@ import { useAuth } from "@/context/AuthContext";
 
 const ProtectedRoute = ({ role }) => {
   const { user, loading } = useAuth();
+  console.log("ProtectedRoute → loading:", loading);
+  console.log("ProtectedRoute → user:", user);
 
   // ⏳ WAIT until auth finishes loading
   if (loading) {
@@ -26,5 +28,5 @@ const ProtectedRoute = ({ role }) => {
   return <Outlet />;
 };
 
-export default ProtectedRoute;
 
+export default ProtectedRoute;

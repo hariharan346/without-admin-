@@ -12,9 +12,25 @@ dotenv.config();
 connectDB();
 
 const app = express();
-app.use(cors({
-  origin: 'http://localhost:8081'
-}));
+
+const allowedOrigins = [
+  "http://localhost:8080",
+  "http://localhost:8081",
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 
 app.use("/api/services", serviceRoutes);
@@ -26,5 +42,3 @@ app.use("/api/admin", adminRoutes);
 app.listen(5000, () =>
   console.log("Server running on http://localhost:5000")
 );
-
-

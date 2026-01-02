@@ -19,33 +19,34 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setIsLoading(true);
 
-    try {
-      const loggedInUser = await login(email, password);
-      setIsLoading(false);
+  try {
+    const loggedInUser = await login(email, password);
 
-      toast({
-        title: "Welcome back!",
-        description: "Login successful",
-      });
+    toast({
+      title: "Welcome back!",
+      description: "Login successful",
+    });
 
-      if (loggedInUser.role === "vendor") {
-        navigate("/vendor/dashboard");
-      } else {
-        navigate("/customer/dashboard");
-      }
-    } catch (error) {
-      setIsLoading(false);
-      toast({
-        title: "Login Failed",
-        description: "Invalid email or password",
-        variant: "destructive",
-      });
+    if (loggedInUser.role === "vendor") {
+      navigate("/vendor/dashboard");
+    } else {
+      navigate("/"); // ✅ FIXED
     }
-  };
+  } catch (error) {
+    toast({
+      title: "Login Failed",
+      description: "Invalid email or password",
+      variant: "destructive",
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-background">

@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
-const AdminLoginPage = () => {
+const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -21,29 +21,29 @@ const AdminLoginPage = () => {
     setIsLoading(true);
 
     try {
-      const loggedInUser = await login(email, password);
-      setIsLoading(false);
+      const user = await login(email, password);
 
-      if (loggedInUser.role === "admin") {
-        toast({
-          title: "Welcome Admin!",
-          description: "Login successful",
-        });
+      // 🔁 ROLE-BASED REDIRECT
+      if (user.role === "admin") {
         navigate("/admin/dashboard");
+      } else if (user.role === "vendor") {
+        navigate("/vendor/dashboard");
       } else {
-        toast({
-          title: "Login Failed",
-          description: "You are not authorized as an admin.",
-          variant: "destructive",
-        });
+        navigate("/"); // normal user home
       }
-    } catch (error) {
-      setIsLoading(false);
+
       toast({
-        title: "Login Failed",
+        title: "Login successful",
+        description: "Welcome back!",
+      });
+    } catch (error) {
+      toast({
+        title: "Login failed",
         description: "Invalid email or password",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -55,10 +55,10 @@ const AdminLoginPage = () => {
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-foreground">
-              Admin Login
+              Login
             </h1>
             <p className="text-muted-foreground mt-2">
-              Access the admin dashboard
+              Login to your account
             </p>
           </div>
 
@@ -103,4 +103,4 @@ const AdminLoginPage = () => {
   );
 };
 
-export default AdminLoginPage;
+export default LoginPage;

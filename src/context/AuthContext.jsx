@@ -7,7 +7,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 🔥 Restore login on refresh
+  // 🔁 Restore user on page refresh
   useEffect(() => {
     const token = localStorage.getItem("token");
 
@@ -28,43 +28,36 @@ export const AuthProvider = ({ children }) => {
       .finally(() => setLoading(false));
   }, []);
 
-  // ✅ LOGIN
-  const login = async (email, password) => {
-    try {
-      const res = await api.post("/auth/login", { email, password });
-      localStorage.setItem("token", res.data.token);
-      // Let the useEffect handle the user state
-      const meRes = await api.get("/auth/me");
-      setUser(meRes.data);
-      return meRes.data;
-    } catch (error) {
-      throw error;
-    }
-  };
+  // ✅ LOGIN (USE RESPONSE USER – DO NOT CALL /me HERE)
+const login = async (email, password) => {
+  const res = await api.post("/auth/login", { email, password });
+  localStorage.setItem("token", res.data.token);
+
+  const meRes = await api.get("/auth/me");
+  setUser(meRes.data);
+
+  return meRes.data;
+};
+
 
   // ✅ REGISTER
   const register = async (data) => {
-    try {
-      const res = await api.post("/auth/register", data);
-      localStorage.setItem("token", res.data.token);
-      const meRes = await api.get("/auth/me");
-      setUser(meRes.data);
-      return meRes.data;
-    } catch (error) {
-      throw error;
-    }
+    const res = await api.post("/auth/register", data);
+
+    localStorage.setItem("token", res.data.token);
+    setUser(res.data.user);
+
+    return res.data.user;
   };
 
   // ✅ LOGOUT
-  const logout = async () => {
+  const logout = () => {
     localStorage.removeItem("token");
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider
-      value={{ user, login, register, logout, loading }}
-    >
+    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

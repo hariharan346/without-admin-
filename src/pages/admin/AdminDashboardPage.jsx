@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import api from "@/lib/axios";
 import { Button } from "@/components/ui/button";
 import { Users, Store, FileText, CheckCircle2, Clock } from "lucide-react";
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 
 // Fetch overview statistics
 const fetchOverviewStats = async () => {
@@ -15,6 +16,24 @@ const fetchOverviewStats = async () => {
 // Fetch all service requests for admin
 const fetchAllServiceRequests = async () => {
   const { data } = await api.get("/admin/requests");
+  return data;
+};
+
+// Fetch status summary analytics
+const fetchStatusSummary = async () => {
+  const { data } = await api.get("/admin/analytics/status-summary");
+  return data;
+};
+
+// Fetch requests by service analytics
+const fetchRequestsByService = async () => {
+  const { data } = await api.get("/admin/analytics/requests-by-service");
+  return data;
+};
+
+// Fetch request analytics over time
+const fetchRequestAnalytics = async () => {
+  const { data } = await api.get("/admin/analytics/requests?range=month");
   return data;
 };
 
@@ -37,7 +56,36 @@ const AdminDashboardPage = () => {
     queryFn: fetchAllServiceRequests,
   });
 
-  if (isLoadingStats || isLoadingRequests) {
+  const {
+    data: statusSummary,
+    isLoading: isLoadingStatusSummary,
+    isError: isErrorStatusSummary,
+  } = useQuery({
+    queryKey: ["statusSummary"],
+    queryFn: fetchStatusSummary,
+  });
+
+  const {
+    data: requestsByService,
+    isLoading: isLoadingRequestsByService,
+    isError: isErrorRequestsByService,
+  } = useQuery({
+    queryKey: ["requestsByService"],
+    queryFn: fetchRequestsByService,
+  });
+
+  const {
+    data: requestAnalytics,
+    isLoading: isLoadingRequestAnalytics,
+    isError: isErrorRequestAnalytics,
+  } = useQuery({
+    queryKey: ["requestAnalytics"],
+    queryFn: fetchRequestAnalytics,
+  });
+
+  const PIE_COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"];
+
+  if (isLoadingStats || isLoadingRequests || isLoadingStatusSummary || isLoadingRequestsByService || isLoadingRequestAnalytics) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
@@ -48,7 +96,7 @@ const AdminDashboardPage = () => {
     );
   }
 
-  if (isErrorStats || isErrorRequests) {
+  if (isErrorStats || isErrorRequests || isErrorStatusSummary || isErrorRequestsByService || isErrorRequestAnalytics) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
@@ -58,6 +106,21 @@ const AdminDashboardPage = () => {
       </div>
     );
   }
+
+  // Format data for Pie Chart
+  const pieChartData = statusSummary?.labels.map((label, index) => ({
+    name: label,
+    value: statusSummary.data[index],
+  })) || [];
+
+  // Format data for Bar Chart (requestsByService already in suitable format { name, count })
+  const barChartData = requestsByService || [];
+
+  // Format data for Line Chart
+  const lineChartData = requestAnalytics?.labels.map((label, index) => ({
+    name: label,
+    requests: requestAnalytics.data[index],
+  })) || [];
 
   return (
     <div className="min-h-screen bg-background">
@@ -150,32 +213,119 @@ const AdminDashboardPage = () => {
           </Card>
         </div>
 
-        {/* Placeholder for Charts/Analytics */}
+        {/* Charts Section */}
+        <div className="grid gap-4 md:grid-cols-2 mt-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Service Request Status Summary</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {pieChartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={pieChartData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {pieChartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="text-muted-foreground text-center py-10">No status data available.</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Requests by Service</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {barChartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart
+                    data={barChartData}
+                    margin={{
+                      top: 5,
+                      right: 30,
+                      left: 20,
+                      bottom: 5,
+                    }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} interval={0} />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="count" fill="#8884d8" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="text-muted-foreground text-center py-10">No service request data available.</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="md:col-span-2"> {/* Span full width on medium screens */}
+            <CardHeader>
+              <CardTitle>Monthly Service Requests</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {lineChartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart
+                    data={lineChartData}
+                    margin={{
+                      top: 5,
+                      right: 30,
+                      left: 20,
+                      bottom: 5,
+                    }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="requests" stroke="#82ca9d" activeDot={{ r: 8 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="text-muted-foreground text-center py-10">No monthly request data available.</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Recent Requests Summary */}
         <div className="mt-8">
           <Card>
             <CardHeader>
-              <CardTitle>Request Statistics (Coming Soon)</CardTitle>
+              <CardTitle>Recent Requests</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">
-                Charts and more detailed analytics will be displayed here.
-              </p>
-              {/* You can add simple text-based summaries here if needed from serviceRequests */}
-              <div className="mt-4">
-                <h3 className="font-semibold mb-2">Recent Requests:</h3>
-                {serviceRequests && serviceRequests.length > 0 ? (
-                  <ul className="list-disc list-inside text-sm text-muted-foreground">
-                    {serviceRequests.slice(0, 5).map((req) => (
-                      <li key={req._id}>
-                        {req.service.name} by {req.user.name} (Status:{" "}
-                        {req.status})
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p>No requests found.</p>
-                )}
-              </div>
+              {serviceRequests && serviceRequests.length > 0 ? (
+                <ul className="list-disc list-inside text-sm text-muted-foreground">
+                  {serviceRequests.slice(0, 5).map((req) => (
+                    <li key={req._id}>
+                      {req.service.name} by {req.user.name} (Status:{" "}
+                      {req.status})
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p>No requests found.</p>
+              )}
             </CardContent>
           </Card>
         </div>

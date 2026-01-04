@@ -33,6 +33,9 @@ export const createSubCategory = async (req, res) => {
       category: categoryId,
     });
 
+    category.subcategories.push(subCategory._id);
+    await category.save();
+
     res.status(201).json(subCategory);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -97,6 +100,12 @@ export const deleteSubCategory = async (req, res) => {
       return res.status(404).json({ message: "Subcategory not found" });
     }
 
+    // Remove subcategory reference from its parent category
+    await ServiceCategory.updateOne(
+      { _id: subCategory.category },
+      { $pull: { subcategories: subCategory._id } }
+    );
+
     await subCategory.deleteOne();
     res.json({ message: "Subcategory removed" });
   } catch (error) {
@@ -106,7 +115,7 @@ export const deleteSubCategory = async (req, res) => {
 
 // @desc    Get a single service subcategory by slug
 // @route   GET /api/subcategories/:slug
-//   Public
+// @access  Public
 export const getSubCategoryBySlug = async (req, res) => {
   const { slug } = req.params;
 

@@ -20,12 +20,18 @@ const serviceCategorySchema = new mongoose.Schema({
   },
   image: {
     type: String,
-    required: true,
+    required: false,
   },
   services: [
     {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Service',
+    },
+  ],
+  subcategories: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'ServiceSubCategory',
     },
   ],
 }, {

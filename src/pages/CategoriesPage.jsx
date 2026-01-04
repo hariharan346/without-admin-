@@ -6,10 +6,9 @@ import { CategoryCard } from "@/components/cards/CategoryCard";
 import { useAuth } from "@/context/AuthContext";
 import { ChevronLeft } from "lucide-react";
 import api from "@/lib/axios";
-import { categories as staticCategories } from "@/data/services"; // Import static categories
 
-const fetchServices = async () => {
-  const { data } = await api.get("/services");
+const fetchCategories = async () => {
+  const { data } = await api.get("/categories");
   return data;
 };
 
@@ -17,37 +16,13 @@ const CategoriesPage = () => {
   const { user, logout } = useAuth();
 
   const {
-    data: services,
+    data: categories,
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ["services"],
-    queryFn: fetchServices,
+    queryKey: ["categories"],
+    queryFn: fetchCategories,
   });
-
-  const categories = services
-    ? Object.values(
-        services.reduce((acc, service) => {
-          if (!acc[service.category]) {
-            acc[service.category] = {
-              id: service.category.toLowerCase().replace(/ /g, "-"),
-              name: service.category,
-              services: [],
-            };
-          }
-          acc[service.category].services.push(service);
-          return acc;
-        }, {})
-      ).map((dynamicCategory) => {
-        // Merge with static category data to get icon and description
-        const staticCategory = staticCategories.find(
-          (sc) => sc.name === dynamicCategory.name
-        );
-        return staticCategory
-          ? { ...dynamicCategory, icon: staticCategory.icon, description: staticCategory.description }
-          : dynamicCategory;
-      })
-    : [];
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -79,9 +54,9 @@ const CategoriesPage = () => {
             {isLoading && <p>Loading categories...</p>}
             {isError && <p>Error fetching categories.</p>}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {categories.map((category, index) => (
+              {categories && categories.map((category, index) => (
                 <CategoryCard
-                  key={category.id}
+                  key={category._id}
                   category={category}
                   index={index}
                 />

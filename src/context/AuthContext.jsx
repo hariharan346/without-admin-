@@ -32,22 +32,17 @@ export const AuthProvider = ({ children }) => {
 const login = async (email, password) => {
   const res = await api.post("/auth/login", { email, password });
   localStorage.setItem("token", res.data.token);
-
-  const meRes = await api.get("/auth/me");
-  setUser(meRes.data);
-
-  return meRes.data;
+  setUser({ _id: res.data._id, name: res.data.name, email: res.data.email, role: res.data.role });
+  return { _id: res.data._id, name: res.data.name, email: res.data.email, role: res.data.role };
 };
 
 
   // ✅ REGISTER
   const register = async (data) => {
     const res = await api.post("/auth/register", data);
-
     localStorage.setItem("token", res.data.token);
-    setUser(res.data.user);
-
-    return res.data.user;
+    setUser({ _id: res.data._id, name: res.data.name, email: res.data.email, role: res.data.role });
+    return { _id: res.data._id, name: res.data.name, email: res.data.email, role: res.data.role };
   };
 
   // ✅ LOGOUT

@@ -1,20 +1,20 @@
 import { Link } from "react-router-dom";
-import { Service } from "@/data/services";
+import api from "@/lib/axios";
 
 export const ServiceCard = ({ service, index = 0 }) => {
-  const Icon = service.icon;
-
   return (
     <Link
-      to={`/service/${service.id}`}
+      to={`/service/${service.slug}`}
       className="group block"
       style={{ animationDelay: `${index * 75}ms` }}
     >
       <div className="bg-card rounded-xl p-5 border border-border card-hover h-full">
         <div className="flex items-start gap-4">
-          <div className="w-12 h-12 rounded-xl bg-accent-light flex items-center justify-center flex-shrink-0 group-hover:bg-accent group-hover:scale-105 transition-all duration-300">
-            <Icon className="w-6 h-6 text-accent group-hover:text-accent-foreground transition-colors" />
-          </div>
+          <img
+            src={`${api.defaults.baseURL}${service.image}`}
+            alt={service.name}
+            className="w-16 h-16 rounded-lg object-cover"
+          />
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
               {service.name}

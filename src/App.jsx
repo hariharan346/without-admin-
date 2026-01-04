@@ -15,12 +15,13 @@ import ServicePage from "./pages/ServicePage";
 import VendorProfilePage from "./pages/VendorProfilePage";
 import ServiceRequestPage from "./pages/ServiceRequestPage";
 import OpenServiceRequestPage from "./pages/OpenServiceRequestPage";
-import JobDetailsPage from "./pages/JobDetailsPage";
+import ServiceRequestDetailsPage from "./pages/ServiceRequestDetailsPage";
 import NotFound from "./pages/NotFound";
 import AdminLoginPage from "./pages/admin/AdminLoginPage";
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import AdminUsersPage from "./pages/admin/AdminUsersPage";
 import AdminVendorsPage from "./pages/admin/AdminVendorsPage";
+import AdminCategoriesPage from "./pages/admin/AdminCategoriesPage";
 import AdminProtectedRoute from "./routes/AdminProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -38,8 +39,8 @@ const App = () => (
         <Route path="/category/:categoryId" element={<CategoryPage />} />
         <Route path="/service/:serviceId" element={<ServicePage />} />
         <Route path="/vendor/:vendorId" element={<VendorProfilePage />} />
-        <Route path="/request/:vendorId" element={<ServiceRequestPage />} />
-        <Route path="/job/:jobId" element={<JobDetailsPage />} />
+        <Route path="/request/vendor/:vendorId" element={<ServiceRequestPage />} />
+        <Route path="/request/:requestId" element={<ServiceRequestDetailsPage />} />
 
         {/* CUSTOMER */}
         <Route element={<ProtectedRoute role="user" />}>
@@ -64,6 +65,7 @@ const App = () => (
           <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
           <Route path="/admin/users" element={<AdminUsersPage />} />
           <Route path="/admin/vendors" element={<AdminVendorsPage />} />
+          <Route path="/admin/categories" element={<AdminCategoriesPage />} />
         </Route>
 
         <Route path="*" element={<NotFound />} />

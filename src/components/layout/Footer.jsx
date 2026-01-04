@@ -1,8 +1,19 @@
 import { Link } from "react-router-dom";
-import { categories } from "@/data/services";
+import { useQuery } from "@tanstack/react-query";
 import { MapPin, Phone, Mail } from "lucide-react";
+import api from "@/lib/axios";
+
+const fetchCategories = async () => {
+  const { data } = await api.get("/categories");
+  return data;
+};
 
 export const Footer = () => {
+  const { data: categories, isLoading, isError } = useQuery({
+    queryKey: ["footerCategories"],
+    queryFn: fetchCategories,
+  });
+
   return (
     <footer className="bg-foreground text-primary-foreground">
       <div className="container mx-auto px-4 py-12">
@@ -16,7 +27,7 @@ export const Footer = () => {
               <span className="text-xl font-bold">ServiConnect</span>
             </Link>
             <p className="text-primary-foreground/70 text-sm leading-relaxed">
-              Your trusted platform for finding reliable local service providers. 
+              Your trusted platform for finding reliable local service providers.
               Quality services at your doorstep.
             </p>
             <div className="flex items-center gap-2 text-sm text-primary-foreground/70">
@@ -29,16 +40,19 @@ export const Footer = () => {
           <div>
             <h4 className="font-semibold text-lg mb-4">Services</h4>
             <ul className="space-y-2">
-              {categories.slice(0, 5).map((category) => (
-                <li key={category.id}>
-                  <Link
-                    to={`/category/${category.id}`}
-                    className="text-primary-foreground/70 hover:text-primary-foreground transition-colors text-sm"
-                  >
-                    {category.name}
-                  </Link>
-                </li>
-              ))}
+              {isLoading && <li>Loading services...</li>}
+              {isError && <li>Error loading services.</li>}
+              {categories &&
+                categories.slice(0, 5).map((category) => (
+                  <li key={category._id}>
+                    <Link
+                      to={`/category/${category.slug}`}
+                      className="text-primary-foreground/70 hover:text-primary-foreground transition-colors text-sm"
+                    >
+                      {category.name}
+                    </Link>
+                  </li>
+                ))}
             </ul>
           </div>
 

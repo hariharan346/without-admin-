@@ -9,9 +9,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import api from "@/lib/axios";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
-const fetchServices = async () => {
-  const { data } = await api.get("/services");
+
+const fetchCategoriesWithServices = async () => {
+  const { data } = await api.get("/categories"); // Assuming this endpoint returns categories populated with services
   return data;
 };
 
@@ -24,15 +26,15 @@ const VendorRegisterPage = () => {
     companyName: "",
     location: "",
   });
-  const [selectedServices, setSelectedServices] = useState([]);
+  const [selectedServices, setSelectedServices] = useState([]); // Stores array of service _ids
   const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const { data: services, isLoading: isLoadingServices } = useQuery({
-    queryKey: ["services"],
-    queryFn: fetchServices,
+  const { data: categories, isLoading: isLoadingCategories } = useQuery({
+    queryKey: ["categoriesWithServices"],
+    queryFn: fetchCategoriesWithServices,
   });
 
   const handleSubmit = async (e) => {
@@ -50,7 +52,7 @@ const VendorRegisterPage = () => {
       await register({
         ...formData,
         role: "vendor",
-        services: selectedServices,
+        services: selectedServices, // Send array of service _ids
       });
       setIsLoading(false);
 
@@ -63,17 +65,17 @@ const VendorRegisterPage = () => {
       setIsLoading(false);
       toast({
         title: "Registration Failed",
-        description: "Email already exists or invalid data.",
+        description: error.response?.data?.message || "Email already exists or invalid data.",
         variant: "destructive",
       });
     }
   };
 
-  const toggleService = (serviceName) => {
+  const toggleService = (serviceId) => {
     setSelectedServices((prev) =>
-      prev.includes(serviceName)
-        ? prev.filter((s) => s !== serviceName)
-        : [...prev, serviceName]
+      prev.includes(serviceId)
+        ? prev.filter((id) => id !== serviceId)
+        : [...prev, serviceId]
     );
   };
 
@@ -163,23 +165,32 @@ const VendorRegisterPage = () => {
 
               <div className="space-y-3">
                 <Label>Services Offered *</Label>
-                {isLoadingServices ? (
+                {isLoadingCategories ? (
                   <p>Loading services...</p>
                 ) : (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-60 overflow-y-auto p-2">
-                    {services.map((s) => (
-                      <label
-                        key={s._id}
-                        className="flex items-center gap-2 text-sm cursor-pointer"
-                      >
-                        <Checkbox
-                          checked={selectedServices.includes(s.name)}
-                          onCheckedChange={() => toggleService(s.name)}
-                        />
-                        {s.name}
-                      </label>
+                  <Accordion type="multiple" className="w-full">
+                    {categories && categories.map((category) => (
+                      <AccordionItem value={category._id} key={category._id}>
+                        <AccordionTrigger>{category.name}</AccordionTrigger>
+                        <AccordionContent>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-2">
+                            {category.services.map((service) => (
+                              <label
+                                key={service._id}
+                                className="flex items-center gap-2 text-sm cursor-pointer"
+                              >
+                                <Checkbox
+                                  checked={selectedServices.includes(service._id)}
+                                  onCheckedChange={() => toggleService(service._id)}
+                                />
+                                {service.name}
+                              </label>
+                            ))}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
                     ))}
-                  </div>
+                  </Accordion>
                 )}
               </div>
 

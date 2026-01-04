@@ -1,4 +1,3 @@
-import { Review } from "@/data/services";
 import { Star } from "lucide-react";
 
 export const ReviewCard = ({ review }) => {

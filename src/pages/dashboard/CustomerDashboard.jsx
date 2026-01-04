@@ -13,21 +13,22 @@ import {
   MapPin,
 } from "lucide-react";
 import api from "@/lib/axios";
+import { format } from "date-fns";
 
-const fetchUserJobs = async () => {
-  const { data } = await api.get("/jobs/my");
+const fetchUserRequests = async () => {
+  const { data } = await api.get("/requests/my");
   return data;
 };
 
 const CustomerDashboard = () => {
   const { user, logout } = useAuth();
   const {
-    data: jobs,
+    data: requests,
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ["userJobs"],
-    queryFn: fetchUserJobs,
+    queryKey: ["userRequests"],
+    queryFn: fetchUserRequests,
   });
 
   const getStatusBadge = (status) => {
@@ -80,37 +81,37 @@ const CustomerDashboard = () => {
           <div className="bg-card rounded-2xl p-6 border border-border">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold">
-                Your Service Requests ({jobs?.length || 0})
+                Your Service Requests ({requests?.length || 0})
               </h2>
               <Button asChild>
                 <Link to="/open-request">Create Open Request</Link>
               </Button>
             </div>
             {isLoading ? (
-              <p>Loading your jobs...</p>
+              <p>Loading your requests...</p>
             ) : isError ? (
-              <p>Error fetching your jobs.</p>
-            ) : jobs && jobs.length > 0 ? (
+              <p>Error fetching your requests.</p>
+            ) : requests && requests.length > 0 ? (
               <div className="space-y-4">
-                {jobs.map((job) => (
-                  <Link to={`/job/${job._id}`} key={job._id}>
+                {requests.map((request) => (
+                  <Link to={`/request/${request._id}`} key={request._id}>
                     <div
                       className="p-4 bg-muted/50 rounded-xl hover:bg-muted transition-colors cursor-pointer"
                     >
                       <div className="flex flex-wrap items-start justify-between gap-4">
                         <div>
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="font-semibold">{job.service}</span>
+                            <span className="font-semibold">{request.service.name}</span>
                           </div>
                           <p className="text-sm text-muted-foreground">
-                            {job.vendor?.name || "Pending Vendor"}
+                            {request.vendor?.companyName || "Pending Vendor"}
                           </p>
-                          <p className="text-sm mt-2">{job.description}</p>
+                          <p className="text-sm mt-2">{request.description}</p>
                         </div>
                         <div className="text-right">
-                          {getStatusBadge(job.status)}
+                          {getStatusBadge(request.status)}
                           <p className="text-xs text-muted-foreground mt-2">
-                            {new Date(job.createdAt).toLocaleDateString()}
+                            {format(new Date(request.createdAt), 'PPP p')}
                           </p>
                         </div>
                       </div>
@@ -119,15 +120,17 @@ const CustomerDashboard = () => {
                 ))}
               </div>
             ) : (
-              <p className="text-muted-foreground">
-                No service requests yet.{" "}
+              <div className="text-center py-16">
+                <p className="text-muted-foreground text-lg">
+                  You have not made any service requests yet.{" "}
+                </p>
                 <Link
                   to="/categories"
-                  className="text-primary hover:underline"
+                  className="text-primary hover:underline mt-2 inline-block"
                 >
                   Browse services
                 </Link>
-              </p>
+              </div>
             )}
           </div>
         </div>

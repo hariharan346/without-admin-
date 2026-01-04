@@ -2,7 +2,13 @@ import { useState } from "react";
 import { Search, MapPin } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { getAllServices } from "@/data/services";
+import { useQuery } from "@tanstack/react-query";
+import api from "@/lib/axios";
+
+const fetchAllServices = async () => {
+  const { data } = await api.get("/services");
+  return data;
+};
 
 export const SearchBar = () => {
   const [query, setQuery] = useState("");
@@ -10,10 +16,16 @@ export const SearchBar = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const navigate = useNavigate();
 
-  const services = getAllServices();
-  const filteredServices = services.filter((s) =>
-    s.name.toLowerCase().includes(query.toLowerCase())
-  );
+  const { data: services, isLoading, isError } = useQuery({
+    queryKey: ["allServices"],
+    queryFn: fetchAllServices,
+  });
+
+  const filteredServices = services
+    ? services.filter((s) =>
+        s.name.toLowerCase().includes(query.toLowerCase())
+      )
+    : [];
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -22,7 +34,7 @@ export const SearchBar = () => {
         (s) => s.name.toLowerCase() === query.toLowerCase()
       );
       if (matchedService) {
-        navigate(`/service/${matchedService.id}`);
+        navigate(`/service/${matchedService.slug}`);
       } else {
         navigate(
           `/search?q=${encodeURIComponent(query)}&location=${encodeURIComponent(
@@ -33,9 +45,9 @@ export const SearchBar = () => {
     }
   };
 
-  const handleSuggestionClick = (serviceId) => {
+  const handleSuggestionClick = (serviceSlug) => {
     setShowSuggestions(false);
-    navigate(`/service/${serviceId}`);
+    navigate(`/service/${serviceSlug}`);
   };
 
   return (
@@ -62,12 +74,11 @@ export const SearchBar = () => {
             <div className="absolute top-full left-0 right-0 mt-2 bg-card rounded-xl border border-border shadow-lg overflow-hidden z-50">
               {filteredServices.slice(0, 5).map((service) => (
                 <button
-                  key={service.id}
+                  key={service._id}
                   type="button"
-                  onClick={() => handleSuggestionClick(service.id)}
+                  onClick={() => handleSuggestionClick(service.slug)}
                   className="w-full px-4 py-3 text-left hover:bg-muted transition-colors flex items-center gap-3"
                 >
-                  <service.icon className="w-5 h-5 text-primary" />
                   <div>
                     <p className="font-medium text-foreground">
                       {service.name}

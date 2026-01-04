@@ -4,11 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { VendorCard } from "@/components/cards/VendorCard";
-import {
-  getServiceById,
-  getCategoryById,
-  getAllServices,
-} from "@/data/services";
 import { useAuth } from "@/context/AuthContext";
 import { ChevronLeft, Filter, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,31 +18,40 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import api from "@/lib/axios";
 
-const fetchVendorsByService = async (serviceId) => {
-  const { data } = await api.get(`/vendors?service=${serviceId}`);
+const fetchServiceBySlug = async (slug) => {
+  const { data } = await api.get(`/services/${slug}`);
+  return data;
+};
+
+const fetchVendorsByService = async (serviceSlug) => {
+  const { data } = await api.get(`/vendors?service=${serviceSlug}`);
   return data;
 };
 
 const ServicePage = () => {
-  const { serviceId } = useParams();
+  const { serviceId } = useParams(); // This will now be serviceSlug
   const { user, logout } = useAuth();
 
   const [showAvailableOnly, setShowAvailableOnly] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
-  // This is a workaround to get the service details
-  const allServices = getAllServices();
-  const service = allServices.find((s) => s.id === serviceId);
-  const category = service ? getCategoryById(service.categoryId) : null;
+  const {
+    data: service,
+    isLoading: isLoadingService,
+    isError: isErrorService,
+  } = useQuery({
+    queryKey: ["service", serviceId],
+    queryFn: () => fetchServiceBySlug(serviceId),
+  });
 
   const {
     data: vendors,
-    isLoading,
-    isError,
+    isLoading: isLoadingVendors,
+    isError: isErrorVendors,
   } = useQuery({
     queryKey: ["vendors", serviceId],
-    queryFn: () => fetchVendorsByService(service.name),
-    enabled: !!service,
+    queryFn: () => fetchVendorsByService(serviceId),
+    enabled: !!service, // Only fetch vendors if service data is available
   });
 
   const filteredVendors = useMemo(() => {
@@ -61,7 +65,7 @@ const ServicePage = () => {
     return result;
   }, [vendors, showAvailableOnly]);
 
-  if (isLoading) {
+  if (isLoadingService || isLoadingVendors) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar user={user} onLogout={logout} />
@@ -72,7 +76,8 @@ const ServicePage = () => {
       </div>
     );
   }
-  if (isError || !service) {
+
+  if (isErrorService || isErrorVendors || !service) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar user={user} onLogout={logout} />
@@ -91,8 +96,6 @@ const ServicePage = () => {
     );
   }
 
-  const Icon = service.icon;
-
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar user={user} onLogout={logout} />
@@ -102,17 +105,19 @@ const ServicePage = () => {
         <section className="py-10 bg-gradient-hero">
           <div className="container mx-auto px-4">
             <Link
-              to={category ? `/category/${category.id}` : "/categories"}
+              to="/categories" // Link to general categories page
               className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4"
             >
               <ChevronLeft className="w-4 h-4" />
-              {category?.name || "All Categories"}
+              All Categories
             </Link>
 
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-accent-light flex items-center justify-center">
-                <Icon className="w-8 h-8 text-accent" />
-              </div>
+              <img
+                src={`${api.defaults.baseURL}${service.image}`}
+                alt={service.name}
+                className="w-24 h-24 rounded-lg object-cover"
+              />
               <div>
                 <h1 className="text-3xl md:text-4xl font-bold text-foreground">
                   {service.name}
@@ -174,7 +179,7 @@ const ServicePage = () => {
                   <VendorCard
                     key={vendor._id}
                     vendor={vendor}
-                    serviceId={serviceId}
+                    serviceId={serviceId} // Keep serviceId for the request page
                     index={index}
                   />
                 ))}

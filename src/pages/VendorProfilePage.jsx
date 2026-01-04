@@ -2,7 +2,6 @@ import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { getServiceById } from "@/data/services";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +23,7 @@ const fetchVendorById = async (vendorId) => {
 const VendorProfilePage = () => {
   const { vendorId } = useParams();
   const [searchParams] = useSearchParams();
-  const serviceId = searchParams.get("service");
+  const serviceSlug = searchParams.get("service"); // Now it's a slug
   const { user, logout } = useAuth();
 
   const {
@@ -35,7 +34,7 @@ const VendorProfilePage = () => {
     queryKey: ["vendor", vendorId],
     queryFn: () => fetchVendorById(vendorId),
   });
-  const service = serviceId ? getServiceById(serviceId) : null;
+  // const service = serviceId ? getServiceById(serviceId) : null; // Removed
 
   if (isLoading) {
     return (
@@ -77,11 +76,11 @@ const VendorProfilePage = () => {
         <section className="py-10 bg-gradient-hero">
           <div className="container mx-auto px-4">
             <Link
-              to={service ? `/service/${service.id}` : "/categories"}
+              to={serviceSlug ? `/service/${serviceSlug}` : "/categories"}
               className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
             >
               <ChevronLeft className="w-4 h-4" />
-              {service ? `Back to ${service.name}` : "Browse Services"}
+              {serviceSlug ? `Back to Service` : "Browse Services"}
             </Link>
 
             <div className="bg-card rounded-2xl p-6 md:p-8 border border-border shadow-md">
@@ -124,8 +123,8 @@ const VendorProfilePage = () => {
                       {vendor.isAvailable && (
                         <Button asChild variant="hero" size="lg">
                           <Link
-                            to={`/request/${vendor._id}${
-                              serviceId ? `?service=${serviceId}` : ""
+                            to={`/request/vendor/${vendor._id}${
+                              serviceSlug ? `?service=${serviceSlug}` : ""
                             }`}
                           >
                             Request Service
@@ -200,8 +199,8 @@ const VendorProfilePage = () => {
                       className="w-full mt-6"
                     >
                       <Link
-                        to={`/request/${vendor._id}${
-                          serviceId ? `?service=${serviceId}` : ""
+                        to={`/request/vendor/${vendor._id}${
+                          serviceSlug ? `?service=${serviceSlug}` : ""
                         }`}
                       >
                         Request Service Now

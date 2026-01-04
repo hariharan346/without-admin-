@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Navbar } from "@/components/layout/Navbar";
@@ -19,20 +19,34 @@ import { ChevronLeft, Store, MapPin, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import api from "@/lib/axios";
 
+// Fetch a single vendor by ID
 const fetchVendorById = async (vendorId) => {
   const { data } = await api.get(`/vendors/${vendorId}`);
   return data;
 };
 
-const createJob = async (jobData) => {
-  const { data } = await api.post("/jobs", jobData);
+// Fetch a single service by slug
+const fetchServiceBySlug = async (serviceSlug) => {
+  const { data } = await api.get(`/services/${serviceSlug}`);
+  return data;
+};
+
+// Fetch all categories populated with services
+const fetchCategoriesWithServices = async () => {
+  const { data } = await api.get("/categories");
+  return data;
+};
+
+// Create a new service request
+const createRequest = async (requestData) => {
+  const { data } = await api.post("/requests", requestData);
   return data;
 };
 
 const ServiceRequestPage = () => {
   const { vendorId } = useParams();
   const [searchParams] = useSearchParams();
-  const serviceIdFromUrl = searchParams.get("service");
+  const serviceSlugFromUrl = searchParams.get("service"); // Now serviceSlug
 
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -47,29 +61,73 @@ const ServiceRequestPage = () => {
     queryFn: () => fetchVendorById(vendorId),
   });
 
-  const [selectedService, setSelectedService] = useState(serviceIdFromUrl || "");
+  const {
+    data: categories,
+    isLoading: isCategoriesLoading,
+    isError: isCategoriesError,
+  } = useQuery({
+    queryKey: ["categoriesWithServices"],
+    queryFn: fetchCategoriesWithServices,
+  });
+
+  const [selectedCategory, setSelectedCategory] = useState(""); // Stores category _id
+  const [selectedService, setSelectedService] = useState(""); // Stores service _id
+  const [filteredServices, setFilteredServices] = useState([]);
   const [description, setDescription] = useState("");
   const [date, setDate] = useState("");
 
+  // Pre-select service if coming from URL
+  useEffect(() => {
+    if (categories && serviceSlugFromUrl) {
+      categories.forEach((cat) => {
+        const matchingService = cat.services.find(
+          (s) => s.slug === serviceSlugFromUrl
+        );
+        if (matchingService) {
+          setSelectedCategory(cat._id);
+          setSelectedService(matchingService._id);
+        }
+      });
+    }
+  }, [categories, serviceSlugFromUrl]);
+
+  // Filter services based on selected category
+  useEffect(() => {
+    if (selectedCategory && categories) {
+      const category = categories.find((cat) => cat._id === selectedCategory);
+      if (category) {
+        setFilteredServices(category.services);
+        // If the pre-selected service is not in the new filtered list, clear selectedService
+        if (!category.services.some(s => s._id === selectedService)) {
+            setSelectedService("");
+        }
+      }
+    } else {
+      setFilteredServices([]);
+      setSelectedService("");
+    }
+  }, [selectedCategory, categories, selectedService]);
+
+
   const mutation = useMutation({
-    mutationFn: createJob,
+    mutationFn: createRequest,
     onSuccess: () => {
       toast({
         title: "Request Submitted!",
-        description: "Your service request has been sent to the vendor.",
+        description: "Your service request has been sent.",
       });
-      navigate("/dashboard/customer");
+      navigate("/customer/dashboard");
     },
-    onError: () => {
+    onError: (error) => {
       toast({
         title: "Submission Failed",
-        description: "There was an error submitting your request.",
+        description: error.response?.data?.message || "There was an error submitting your request.",
         variant: "destructive",
       });
     },
   });
 
-  if (isVendorLoading) {
+  if (isVendorLoading || isCategoriesLoading) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar user={user} onLogout={logout} />
@@ -81,14 +139,14 @@ const ServiceRequestPage = () => {
     );
   }
 
-  if (isVendorError || !vendor) {
+  if (isVendorError || isCategoriesError || !vendor) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar user={user} onLogout={logout} />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-foreground mb-4">
-              Vendor Not Found
+              Error Loading Data
             </h1>
             <Link to="/categories" className="text-primary hover:underline">
               Browse services
@@ -113,7 +171,7 @@ const ServiceRequestPage = () => {
       return;
     }
 
-    if (!selectedService || !description.trim() || !date.trim()) {
+    if (!selectedCategory || !selectedService || !description.trim() || !date.trim()) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields.",
@@ -123,8 +181,8 @@ const ServiceRequestPage = () => {
     }
 
     mutation.mutate({
-      vendor: vendor.user._id,
-      service: selectedService,
+      vendorId: vendor._id, // Pass vendor _id
+      serviceId: selectedService, // Pass service _id
       description,
       date,
     });
@@ -138,7 +196,7 @@ const ServiceRequestPage = () => {
         <div className="container mx-auto px-4 max-w-2xl">
           <Link
             to={`/vendor/${vendor._id}${
-              selectedService ? `?service=${selectedService}` : ""
+              serviceSlugFromUrl ? `?service=${serviceSlugFromUrl}` : ""
             }`}
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
           >
@@ -193,20 +251,41 @@ const ServiceRequestPage = () => {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Category Selection */}
+              <div className="space-y-2">
+                <Label htmlFor="category">Service Category *</Label>
+                <Select
+                  value={selectedCategory}
+                  onValueChange={setSelectedCategory}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories && categories.map((cat) => (
+                      <SelectItem key={cat._id} value={cat._id}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Service Selection */}
               <div className="space-y-2">
                 <Label htmlFor="service">Service Type *</Label>
                 <Select
                   value={selectedService}
                   onValueChange={setSelectedService}
+                  disabled={!selectedCategory || filteredServices.length === 0}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a service" />
+                    <SelectValue placeholder="Select a service type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {vendor.services.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {s}
+                    {filteredServices.map((service) => (
+                      <SelectItem key={service._id} value={service._id}>
+                        {service.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

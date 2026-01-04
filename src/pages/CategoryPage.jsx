@@ -3,33 +3,27 @@ import { useQuery } from "@tanstack/react-query";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ServiceCard } from "@/components/cards/ServiceCard";
-import { categories as staticCategories } from "@/data/services";
 import { useAuth } from "@/context/AuthContext";
 import { ChevronLeft } from "lucide-react";
 import api from "@/lib/axios";
 
-const fetchServices = async () => {
-  const { data } = await api.get("/services");
+const fetchCategoryBySlug = async (slug) => {
+  const { data } = await api.get(`/categories/${slug}`);
   return data;
 };
 
 const CategoryPage = () => {
-  const { categoryId } = useParams();
+  const { categoryId } = useParams(); // This will now be categorySlug
   const { user, logout } = useAuth();
 
   const {
-    data: services,
+    data: category,
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ["services"],
-    queryFn: fetchServices,
+    queryKey: ["category", categoryId],
+    queryFn: () => fetchCategoryBySlug(categoryId),
   });
-
-  const category = staticCategories.find((c) => c.id === categoryId);
-  const filteredServices = services?.filter(
-    (s) => s.category === category?.name
-  );
 
   if (isLoading) {
     return (
@@ -62,8 +56,6 @@ const CategoryPage = () => {
     );
   }
 
-  const Icon = category.icon;
-
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar user={user} onLogout={logout} />
@@ -81,9 +73,11 @@ const CategoryPage = () => {
             </Link>
 
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-primary-light flex items-center justify-center">
-                <Icon className="w-8 h-8 text-primary" />
-              </div>
+              <img
+                src={`${api.defaults.baseURL}${category.image}`}
+                alt={category.name}
+                className="w-24 h-24 rounded-lg object-cover"
+              />
               <div>
                 <h1 className="text-3xl md:text-4xl font-bold text-foreground">
                   {category.name}
@@ -100,22 +94,16 @@ const CategoryPage = () => {
         <section className="py-12">
           <div className="container mx-auto px-4">
             <h2 className="text-xl font-semibold text-foreground mb-6">
-              Available Services ({filteredServices.length})
+              Available Services ({category.services.length})
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredServices.map((service, index) => {
-                const staticService = category.services.find(
-                  (s) => s.name === service.name
-                );
-                if (!staticService) return null;
-                return (
-                  <ServiceCard
-                    key={service._id}
-                    service={{ ...service, ...staticService }}
-                    index={index}
-                  />
-                );
-              })}
+              {category.services.map((service, index) => (
+                <ServiceCard
+                  key={service._id}
+                  service={service}
+                  index={index}
+                />
+              ))}
             </div>
           </div>
         </section>

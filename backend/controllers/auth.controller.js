@@ -45,7 +45,7 @@ export const register = async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
-      token: generateToken(user._id),
+      token: generateToken(user._id, user.role),
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -70,7 +70,7 @@ export const login = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
-        token: generateToken(user._id),
+        token: generateToken(user._id, user.role),
       });
     } else {
       console.log("Invalid email or password."); // DEBUG

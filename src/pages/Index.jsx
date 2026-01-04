@@ -3,9 +3,11 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { SearchBar } from "@/components/search/SearchBar";
 import { CategoryCard } from "@/components/cards/CategoryCard";
-import { categories, vendors } from "@/data/services";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import api from "@/lib/axios";
+
 import {
   ArrowRight,
   CheckCircle2,
@@ -17,8 +19,36 @@ import {
   Sparkles,
 } from "lucide-react";
 
+const fetchCategories = async () => {
+  const { data } = await api.get("/categories");
+  return data;
+};
+
+const fetchVendors = async () => {
+  const { data } = await api.get("/vendors"); // Assuming this endpoint exists and returns a list of vendors
+  return data;
+};
+
 const Index = () => {
   const { user, logout } = useAuth();
+
+  const {
+    data: categories,
+    isLoading: isLoadingCategories,
+    isError: isErrorCategories,
+  } = useQuery({
+    queryKey: ["homepageCategories"],
+    queryFn: fetchCategories,
+  });
+
+  const {
+    data: vendors,
+    isLoading: isLoadingVendors,
+    isError: isErrorVendors,
+  } = useQuery({
+    queryKey: ["homepageVendors"],
+    queryFn: fetchVendors,
+  });
 
   const stats = [
     { value: "500+", label: "Service Providers", icon: Store },
@@ -158,10 +188,12 @@ const Index = () => {
               </p>
             </div>
 
+            {isLoadingCategories && <p>Loading categories...</p>}
+            {isErrorCategories && <p>Error fetching categories.</p>}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-              {categories.map((category, index) => (
+              {categories && categories.map((category, index) => (
                 <CategoryCard
-                  key={category.id}
+                  key={category._id}
                   category={category}
                   index={index}
                 />
@@ -227,41 +259,44 @@ const Index = () => {
               </p>
             </div>
 
+            {isLoadingVendors && <p>Loading vendors...</p>}
+            {isErrorVendors && <p>Error fetching vendors.</p>}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {vendors
-                .filter((v) => v.rating >= 4.7)
-                .slice(0, 6)
-                .map((vendor, index) => (
-                  <Link
-                    key={vendor.id}
-                    to={`/vendor/${vendor.id}`}
-                    className="bg-card rounded-2xl p-5 border border-border card-hover animate-fade-in block"
-                    style={{ animationDelay: `${index * 100}ms` }}
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className="w-14 h-14 rounded-xl bg-primary-light flex items-center justify-center flex-shrink-0">
-                        <Store className="w-7 h-7 text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-foreground truncate">
-                          {vendor.name}
-                        </h3>
-                        <div className="flex items-center gap-1 mt-1">
-                          <Star className="w-4 h-4 fill-warning text-warning" />
-                          <span className="text-sm font-medium">
-                            {vendor.rating}
-                          </span>
-                          <span className="text-sm text-muted-foreground">
-                            ({vendor.reviewCount})
-                          </span>
+              {vendors &&
+                vendors
+                  .filter((v) => v.rating >= 4.7) // Assuming vendors have a rating field
+                  .slice(0, 6)
+                  .map((vendor, index) => (
+                    <Link
+                      key={vendor._id}
+                      to={`/vendor/${vendor._id}`} // Using _id for vendor links
+                      className="bg-card rounded-2xl p-5 border border-border card-hover animate-fade-in block"
+                      style={{ animationDelay: `${index * 100}ms` }}
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="w-14 h-14 rounded-xl bg-primary-light flex items-center justify-center flex-shrink-0">
+                          <Store className="w-7 h-7 text-primary" />
                         </div>
-                        <p className="text-sm text-muted-foreground mt-1 truncate">
-                          {vendor.location}
-                        </p>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-foreground truncate">
+                            {vendor.companyName || vendor.name}
+                          </h3>
+                          <div className="flex items-center gap-1 mt-1">
+                            <Star className="w-4 h-4 fill-warning text-warning" />
+                            <span className="text-sm font-medium">
+                              {vendor.rating || "N/A"}
+                            </span>
+                            <span className="text-sm text-muted-foreground">
+                              ({vendor.reviewCount || 0})
+                            </span>
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1 truncate">
+                            {vendor.location}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  </Link>
-                ))}
+                    </Link>
+                  ))}
             </div>
           </div>
         </section>

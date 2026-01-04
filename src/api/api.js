@@ -1,33 +1,33 @@
-import api from "./api";
+import api from "@/lib/axios";
 
 /**
- * VENDOR JOBS
+ * VENDOR REQUESTS
  */
-export const getVendorJobs = async () => {
-  const res = await api.get("/jobs/vendor");
+export const getVendorRequests = async () => {
+  const res = await api.get("/requests/vendor");
   return res.data;
 };
 
 /**
- * ACCEPT JOB
+ * ACCEPT REQUEST
  */
-export const acceptJob = async (jobId) => {
-  const res = await api.patch(`/jobs/${jobId}/accept`);
+export const acceptRequest = async (requestId) => {
+  const res = await api.patch(`/requests/${requestId}/accept`);
   return res.data;
 };
 
 /**
- * REJECT JOB
+ * REJECT REQUEST
  */
-export const rejectJob = async (jobId) => {
-  const res = await api.patch(`/jobs/${jobId}/reject`);
+export const rejectRequest = async (requestId) => {
+  const res = await api.patch(`/requests/${requestId}/reject`);
   return res.data;
 };
 
 /**
- * COMPLETE JOB
+ * COMPLETE REQUEST
  */
-export const completeJob = async (jobId) => {
-  const res = await api.patch(`/jobs/${jobId}/complete`);
+export const completeRequest = async (requestId) => {
+  const res = await api.patch(`/requests/${requestId}/complete`);
   return res.data;
 };

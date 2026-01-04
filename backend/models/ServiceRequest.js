@@ -1,18 +1,19 @@
 import mongoose from "mongoose";
 
-const jobSchema = new mongoose.Schema(
+const serviceRequestSchema = new mongoose.Schema(
   {
-    customer: {
+    user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
     vendor: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "Vendor",
     },
     service: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Service',
       required: true,
     },
     description: {
@@ -20,16 +21,16 @@ const jobSchema = new mongoose.Schema(
       required: true,
     },
     date: {
-      type: String,
+      type: Date,
       required: true,
     },
     status: {
       type: String,
-      enum: ["pending", "accepted", "rejected", "cancelled", "completed"],
+      enum: ["pending", "accepted", "completed", "cancelled"],
       default: "pending",
     },
   },
   { timestamps: true }
 );
 
-export default mongoose.model("Job", jobSchema);
+export default mongoose.model("ServiceRequest", serviceRequestSchema);

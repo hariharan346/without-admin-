@@ -23,13 +23,13 @@ const fetchServiceBySlug = async (slug) => {
   return data;
 };
 
-const fetchVendorsByService = async (serviceSlug) => {
-  const { data } = await api.get(`/vendors?service=${serviceSlug}`);
+const fetchVendorsByService = async (serviceId) => {
+  const { data } = await api.get(`/vendors?serviceId=${serviceId}`);
   return data;
 };
 
 const ServicePage = () => {
-  const { serviceId } = useParams(); // This will now be serviceSlug
+  const { serviceSlug } = useParams(); 
   const { user, logout } = useAuth();
 
   const [showAvailableOnly, setShowAvailableOnly] = useState(false);
@@ -40,8 +40,8 @@ const ServicePage = () => {
     isLoading: isLoadingService,
     isError: isErrorService,
   } = useQuery({
-    queryKey: ["service", serviceId],
-    queryFn: () => fetchServiceBySlug(serviceId),
+    queryKey: ["service", serviceSlug],
+    queryFn: () => fetchServiceBySlug(serviceSlug),
   });
 
   const {
@@ -49,8 +49,8 @@ const ServicePage = () => {
     isLoading: isLoadingVendors,
     isError: isErrorVendors,
   } = useQuery({
-    queryKey: ["vendors", serviceId],
-    queryFn: () => fetchVendorsByService(serviceId),
+    queryKey: ["vendors", service?.id], // Use service.id here
+    queryFn: () => fetchVendorsByService(service._id), // Pass service._id
     enabled: !!service, // Only fetch vendors if service data is available
   });
 
@@ -61,6 +61,9 @@ const ServicePage = () => {
     if (showAvailableOnly) {
       result = result.filter((v) => v.isAvailable);
     }
+
+    // Sort by trustScore if it exists
+    result.sort((a, b) => (b.trustScore || 0) - (a.trustScore || 0));
 
     return result;
   }, [vendors, showAvailableOnly]);
@@ -179,7 +182,7 @@ const ServicePage = () => {
                   <VendorCard
                     key={vendor._id}
                     vendor={vendor}
-                    serviceId={serviceId} // Keep serviceId for the request page
+                    serviceId={service._id} // Pass the actual service._id
                     index={index}
                   />
                 ))}

@@ -26,20 +26,35 @@ const VendorRegisterPage = () => {
     companyName: "",
     location: "",
   });
-  const [selectedSubServices, setSelectedSubServices] = useState([]); // Stores array of service _ids
-  const [isLoading, setIsLoading] = useState(false);
-  const { register } = useAuth();
-  const navigate = useNavigate();
-  const { toast } = useToast();
+  const [selectedServicesWithPrices, setSelectedServicesWithPrices] = useState([]); // Stores array of {serviceId, minPrice, maxPrice}
 
   const { data: categories, isLoading: isLoadingCategories } = useQuery({
     queryKey: ["categories"],
     queryFn: fetchCategoriesWithServices,
   });
 
+  const handlePriceChange = (serviceId, field, value) => {
+    setSelectedServicesWithPrices((prev) =>
+      prev.map((service) =>
+        service.serviceId === serviceId ? { ...service, [field]: Number(value) } : service
+      )
+    );
+  };
+
+  const toggleService = (serviceId) => {
+    setSelectedServicesWithPrices((prev) => {
+      if (prev.some((service) => service.serviceId === serviceId)) {
+        return prev.filter((service) => service.serviceId !== serviceId);
+      } else {
+        // Initialize with default prices, or leave blank for user input
+        return [...prev, { serviceId, minPrice: 0, maxPrice: 0 }];
+      }
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (selectedSubServices.length === 0) {
+    if (selectedServicesWithPrices.length === 0) {
       toast({
         title: "Select Services",
         description: "Please select at least one service.",
@@ -47,12 +62,33 @@ const VendorRegisterPage = () => {
       });
       return;
     }
+
+    // Basic validation for minPrice and maxPrice
+    for (const service of selectedServicesWithPrices) {
+      if (service.minPrice <= 0 || service.maxPrice <= 0) {
+        toast({
+          title: "Invalid Price",
+          description: "Min and Max prices must be greater than 0.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (service.minPrice >= service.maxPrice) {
+        toast({
+          title: "Invalid Price Range",
+          description: "Min price must be less than Max price.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     setIsLoading(true);
     try {
       await register({
         ...formData,
         role: "vendor",
-        servicesProvided: selectedSubServices, // Send array of service _ids
+        servicesProvided: selectedServicesWithPrices, // Send array of service objects with prices
       });
       setIsLoading(false);
 
@@ -69,14 +105,6 @@ const VendorRegisterPage = () => {
         variant: "destructive",
       });
     }
-  };
-
-  const toggleSubService = (subServiceId) => {
-    setSelectedSubServices((prev) =>
-      prev.includes(subServiceId)
-        ? prev.filter((id) => id !== subServiceId)
-        : [...prev, subServiceId]
-    );
   };
 
   return (
@@ -174,17 +202,63 @@ const VendorRegisterPage = () => {
                         <AccordionTrigger>{category.name}</AccordionTrigger>
                         <AccordionContent>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-2">
-                            {category.subcategories.map((subcategory) => (
-                              <label
-                                key={subcategory._id}
-                                className="flex items-center gap-2 text-sm cursor-pointer"
+                            {category.services.map((service) => (
+                              <div
+                                key={service._id}
+                                className="flex flex-col gap-2 p-2 border rounded-md"
                               >
-                                <Checkbox
-                                  checked={selectedSubServices.includes(subcategory._id)}
-                                  onCheckedChange={() => toggleSubService(subcategory._id)}
-                                />
-                                {subcategory.name}
-                              </label>
+                                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                                  <Checkbox
+                                    checked={selectedServicesWithPrices.some(
+                                      (s) => s.serviceId === service._id
+                                    )}
+                                    onCheckedChange={() => toggleService(service._id)}
+                                  />
+                                  {service.name}
+                                </label>
+                                {selectedServicesWithPrices.some(
+                                  (s) => s.serviceId === service._id
+                                ) && (
+                                  <div className="flex gap-2 ml-6">
+                                    <Input
+                                      type="number"
+                                      placeholder="Min Price"
+                                      value={
+                                        selectedServicesWithPrices.find(
+                                          (s) => s.serviceId === service._id
+                                        )?.minPrice || ""
+                                      }
+                                      onChange={(e) =>
+                                        handlePriceChange(
+                                          service._id,
+                                          "minPrice",
+                                          e.target.value
+                                        )
+                                      }
+                                      min="0"
+                                      className="w-1/2"
+                                    />
+                                    <Input
+                                      type="number"
+                                      placeholder="Max Price"
+                                      value={
+                                        selectedServicesWithPrices.find(
+                                          (s) => s.serviceId === service._id
+                                        )?.maxPrice || ""
+                                      }
+                                      onChange={(e) =>
+                                        handlePriceChange(
+                                          service._id,
+                                          "maxPrice",
+                                          e.target.value
+                                        )
+                                      }
+                                      min="0"
+                                      className="w-1/2"
+                                    />
+                                  </div>
+                                )}
+                              </div>
                             ))}
                           </div>
                         </AccordionContent>

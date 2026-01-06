@@ -68,7 +68,9 @@ const VendorDashboard = () => {
     enabled: user?.role === "vendor", // Only fetch if user is a vendor
   });
 
-  const [isAvailable, setIsAvailable] = useState(vendorProfile?.isAvailable ?? true);
+  const [isAvailable, setIsAvailable] = useState(false);
+  const [vendorServices, setVendorServices] = useState([]); // State to manage services offered by the vendor
+  const [allAvailableServices, setAllAvailableServices] = useState([]); // State to manage all services from admin
   const [supportIssueType, setSupportIssueType] = useState("");
   const [supportDescription, setSupportDescription] = useState("");
   
@@ -76,8 +78,30 @@ const VendorDashboard = () => {
   useEffect(() => {
     if (vendorProfile) {
       setIsAvailable(vendorProfile.isAvailable);
+      // Assuming vendorProfile.servicesProvided is already populated correctly from /auth/me
+      setVendorServices(vendorProfile.servicesProvided.map(service => ({
+        serviceId: service._id,
+        name: service.name,
+        description: service.description,
+        image: service.image,
+        minPrice: service.minPrice,
+        maxPrice: service.maxPrice,
+      })));
     }
   }, [vendorProfile]);
+
+  // Fetch all services to allow vendor to add new ones
+  const { data: allServicesData, isLoading: isLoadingAllServices } = useQuery({
+    queryKey: ["allServices"],
+    queryFn: () => api.get("/services").then(res => res.data),
+    enabled: user?.role === "vendor",
+  });
+
+  useEffect(() => {
+    if (allServicesData) {
+      setAllAvailableServices(allServicesData);
+    }
+  }, [allServicesData]);
 
   const { data: assignedRequests, isLoading: isLoadingAssigned } = useQuery({
     queryKey: ["vendorRequests"],
@@ -98,6 +122,44 @@ const VendorDashboard = () => {
       toast({
         title: "Update Failed",
         description: error.response?.data?.message || "Could not update availability.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const manageServicesMutation = useMutation({
+    mutationFn: (services) => api.put("/vendors/me/services", { servicesProvided: services }),
+    onSuccess: (data) => {
+      toast({
+        title: "Services Updated",
+        description: "Your services have been updated successfully.",
+      });
+      queryClient.invalidateQueries(["vendorProfile"]);
+      queryClient.invalidateQueries(["vendorServices"]); // Invalidate to refetch vendor's services
+    },
+    onError: (error) => {
+      toast({
+        title: "Update Failed",
+        description: error.response?.data?.message || "Could not update services.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteServiceMutation = useMutation({
+    mutationFn: (serviceId) => api.delete(`/vendors/me/services/${serviceId}`),
+    onSuccess: () => {
+      toast({
+        title: "Service Removed",
+        description: "Service has been removed from your offerings.",
+      });
+      queryClient.invalidateQueries(["vendorProfile"]);
+      queryClient.invalidateQueries(["vendorServices"]); // Invalidate to refetch vendor's services
+    },
+    onError: (error) => {
+      toast({
+        title: "Removal Failed",
+        description: error.response?.data?.message || "Could not remove service.",
         variant: "destructive",
       });
     },
@@ -275,13 +337,6 @@ const VendorDashboard = () => {
                 <p className="text-muted-foreground mt-1">
                   {vendorProfile?.location}
                 </p>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {vendorProfile?.services?.map((service) => (
-                    <Badge key={service._id} variant="secondary">
-                      {service.name}
-                    </Badge>
-                  ))}
-                </div>
               </div>
               <div className="flex items-center gap-3 p-4 bg-card rounded-xl border border-border">
                 <Switch
@@ -300,6 +355,159 @@ const VendorDashboard = () => {
               </div>
             </div>
           )}
+
+          {/* Vendor Services Section */}
+          <div className="bg-card rounded-2xl p-6 border border-border mb-8">
+            <h2 className="text-xl font-semibold mb-4">Your Services</h2>
+            {isLoadingProfile ? (
+              <p>Loading your services...</p>
+            ) : vendorServices.length > 0 ? (
+              <div className="space-y-4">
+                {vendorServices.map((service) => (
+                  <div
+                    key={service.serviceId}
+                    className="flex flex-col sm:flex-row items-center justify-between p-3 border rounded-md"
+                  >
+                    <div className="flex items-center gap-3 w-full sm:w-auto mb-2 sm:mb-0">
+                      {service.image && (
+                        <img
+                          src={service.image}
+                          alt={service.name}
+                          className="w-10 h-10 object-cover rounded"
+                        />
+                      )}
+                      <span className="font-medium">{service.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <Label htmlFor={`minPrice-${service.serviceId}`} className="sr-only">Min Price</Label>
+                      <Input
+                        id={`minPrice-${service.serviceId}`}
+                        type="number"
+                        placeholder="Min Price"
+                        value={service.minPrice}
+                        onChange={(e) => {
+                          const updatedServices = vendorServices.map((s) =>
+                            s.serviceId === service.serviceId
+                              ? { ...s, minPrice: Number(e.target.value) }
+                              : s
+                          );
+                          setVendorServices(updatedServices);
+                        }}
+                        min="0"
+                        className="w-full sm:w-28"
+                      />
+                      <Label htmlFor={`maxPrice-${service.serviceId}`} className="sr-only">Max Price</Label>
+                      <Input
+                        id={`maxPrice-${service.serviceId}`}
+                        type="number"
+                        placeholder="Max Price"
+                        value={service.maxPrice}
+                        onChange={(e) => {
+                          const updatedServices = vendorServices.map((s) =>
+                            s.serviceId === service.serviceId
+                              ? { ...s, maxPrice: Number(e.target.value) }
+                              : s
+                          );
+                          setVendorServices(updatedServices);
+                        }}
+                        min="0"
+                        className="w-full sm:w-28"
+                      />
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => deleteServiceMutation.mutate(service.serviceId)}
+                        disabled={deleteServiceMutation.isPending}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                <Button
+                  onClick={() =>
+                    manageServicesMutation.mutate(
+                      vendorServices.map((s) => ({
+                        serviceId: s.serviceId,
+                        minPrice: s.minPrice,
+                        maxPrice: s.maxPrice,
+                      }))
+                    )
+                  }
+                  disabled={manageServicesMutation.isPending}
+                  className="w-full"
+                >
+                  {manageServicesMutation.isPending ? "Updating..." : "Update Services"}
+                </Button>
+              </div>
+            ) : (
+              <p className="text-muted-foreground">You are not offering any services yet.</p>
+            )}
+
+            {/* Add New Service */}
+            <div className="mt-6 border-t pt-4 border-border">
+              <h3 className="text-lg font-semibold mb-3">Add New Service</h3>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const selectedServiceId = e.target.elements.newService.value;
+                  const newMinPrice = Number(e.target.elements.newMinPrice.value);
+                  const newMaxPrice = Number(e.target.elements.newMaxPrice.value);
+
+                  if (!selectedServiceId || newMinPrice <= 0 || newMaxPrice <= 0 || newMinPrice >= newMaxPrice) {
+                    toast({
+                      title: "Invalid Input",
+                      description: "Please select a service and provide valid min/max prices.",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+
+                  const serviceToAdd = allAvailableServices.find(s => s._id === selectedServiceId);
+                  if (serviceToAdd && !vendorServices.some(s => s.serviceId === serviceToAdd._id)) {
+                    const updatedServices = [
+                      ...vendorServices,
+                      {
+                        serviceId: serviceToAdd._id,
+                        name: serviceToAdd.name,
+                        description: serviceToAdd.description,
+                        image: serviceToAdd.image,
+                        minPrice: newMinPrice,
+                        maxPrice: newMaxPrice,
+                      },
+                    ];
+                    setVendorServices(updatedServices);
+                    e.target.reset();
+                  } else if (vendorServices.some(s => s.serviceId === serviceToAdd._id)) {
+                    toast({
+                      title: "Service Already Added",
+                      description: "This service is already in your offerings. You can edit its prices above.",
+                      variant: "info",
+                    });
+                  }
+                }}
+                className="flex flex-col sm:flex-row gap-3"
+              >
+                <Select name="newService" disabled={isLoadingAllServices}>
+                  <SelectTrigger className="w-full sm:w-[180px]">
+                    <SelectValue placeholder="Select a service" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allAvailableServices.map((service) => (
+                      <SelectItem key={service._id} value={service._id}>
+                        {service.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Input type="number" name="newMinPrice" placeholder="Min Price" min="0" className="w-full sm:w-32" />
+                <Input type="number" name="newMaxPrice" placeholder="Max Price" min="0" className="w-full sm:w-32" />
+                <Button type="submit" disabled={manageServicesMutation.isPending || isLoadingAllServices}>
+                  Add Service
+                </Button>
+              </form>
+            </div>
+          </div>
 
           <div className="grid md:grid-cols-2 gap-8">
             {/* Assigned Requests */}

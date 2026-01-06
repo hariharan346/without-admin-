@@ -17,8 +17,19 @@ const vendorSchema = new mongoose.Schema(
     },
     servicesProvided: [
       {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "ServiceSubCategory",
+        serviceId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Service",
+          required: true,
+        },
+        minPrice: {
+          type: Number,
+          required: true,
+        },
+        maxPrice: {
+          type: Number,
+          required: true,
+        },
       },
     ],
     location: {
@@ -28,6 +39,38 @@ const vendorSchema = new mongoose.Schema(
     isAvailable: {
       type: Boolean,
       default: true,
+    },
+    ratingAverage: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 5,
+    },
+    totalJobs: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    acceptedJobs: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    cancelledJobs: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    avgResponseTime: { // in hours
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    trustScore: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100,
     },
   },
   { timestamps: true }

@@ -269,7 +269,12 @@ export const getServiceBySlug = async (req, res) => {
 // @access  Public
 export const getAllServices = async (req, res) => {
   try {
-    const services = await Service.find({});
+    const { categoryId } = req.query;
+    let query = {};
+    if (categoryId) {
+      query.category = categoryId;
+    }
+    const services = await Service.find(query);
     res.json(services);
   } catch (error) {
     res.status(500).json({ message: error.message });

@@ -16,8 +16,10 @@ router.get("/", getAllVendors); // Handles filtering by serviceSlug via query
 router.get("/:id", getVendorProfile);
 
 // Vendor-specific routes
+router.get("/me/services", protect, vendor, getVendorServices);
+router.put("/me/services", protect, vendor, manageVendorServices);
+router.delete("/me/services/:serviceId", protect, vendor, deleteVendorService);
 router.put("/availability", protect, vendor, toggleVendorAvailability);
-router.put("/services", protect, vendor, updateVendorServices);
 router.post("/support", protect, vendor, contactAdmin);
 
 export default router;

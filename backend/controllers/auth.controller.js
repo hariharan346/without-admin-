@@ -26,7 +26,7 @@ export const register = async (req, res) => {
     });
 
     if (user.role === "vendor") {
-      if (!companyName || !phone || !services || !location) {
+      if (!companyName || !phone || !servicesProvided || !location) {
         // Rollback user creation
         await User.findByIdAndDelete(user._id);
         return res.status(400).json({ message: "Please provide all vendor details" });

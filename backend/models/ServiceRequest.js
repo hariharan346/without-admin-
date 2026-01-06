@@ -29,6 +29,29 @@ const serviceRequestSchema = new mongoose.Schema(
       enum: ["pending", "accepted", "completed", "cancelled"],
       default: "pending",
     },
+    requestType: {
+      type: String,
+      enum: ["OPEN", "TARGETED"],
+      default: "OPEN",
+    },
+    targetedVendor: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Vendor",
+      required: false,
+    },
+    cancelledBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: false,
+    },
+    cancelReason: {
+        type: String,
+        required: false,
+    },
+    cancelledAt: {
+        type: Date,
+        required: false,
+    },
   },
   { timestamps: true }
 );

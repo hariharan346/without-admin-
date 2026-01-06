@@ -77,6 +77,29 @@ export const getVendorProfile = async (req, res) => {
   }
 };
 
+// @desc    Toggle vendor availability
+// @route   PUT /api/vendors/availability
+// @access  Vendor
+export const toggleVendorAvailability = async (req, res) => {
+  try {
+    const vendor = await Vendor.findOne({ user: req.user.id });
+
+    if (!vendor) {
+      return res.status(404).json({ message: "Vendor profile not found" });
+    }
+
+    vendor.isAvailable = !vendor.isAvailable;
+    await vendor.save();
+
+    res.json({
+      message: "Vendor availability updated successfully",
+      isAvailable: vendor.isAvailable,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // @desc    Get services provided by the authenticated vendor
 // @route   GET /api/vendors/me/services
 // @access  Vendor

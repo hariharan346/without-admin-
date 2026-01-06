@@ -1,9 +1,18 @@
 import multer from "multer";
 import path from "path";
+import fs from "fs";
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "backend/uploads/");
+    let uploadPath = "uploads/";
+    if (req.originalUrl.includes("/categories")) {
+      uploadPath += "categories/";
+    } else if (req.originalUrl.includes("/services")) {
+      uploadPath += "services/";
+    }
+    
+    fs.mkdirSync(uploadPath, { recursive: true });
+    cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);

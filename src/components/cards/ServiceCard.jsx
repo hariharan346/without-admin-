@@ -2,6 +2,8 @@ import { Link } from "react-router-dom";
 import api from "@/lib/axios";
 
 export const ServiceCard = ({ service, index = 0 }) => {
+
+
   return (
     <Link
       to={`/service/${service.slug}`}
@@ -11,7 +13,7 @@ export const ServiceCard = ({ service, index = 0 }) => {
       <div className="bg-card rounded-xl p-5 border border-border card-hover h-full">
         <div className="flex items-start gap-4">
           <img
-            src={`${api.defaults.baseURL}${service.image}`}
+            src={service.image ? `http://localhost:5000${service.image}` : '/placeholder.png'}
             alt={service.name}
             className="w-16 h-16 rounded-lg object-cover"
           />
@@ -20,7 +22,7 @@ export const ServiceCard = ({ service, index = 0 }) => {
               {service.name}
             </h3>
             <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-              {service.description}
+              {service.category?.name ?? "General Service"}
             </p>
           </div>
         </div>

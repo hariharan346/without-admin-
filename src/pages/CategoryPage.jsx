@@ -74,7 +74,7 @@ const CategoryPage = () => {
 
             <div className="flex items-center gap-4">
               <img
-                src={`${api.defaults.baseURL}${category.image}`}
+                src={category.image ? `http://localhost:5000${category.image}` : '/placeholder.png'}
                 alt={category.name}
                 className="w-24 h-24 rounded-lg object-cover"
               />

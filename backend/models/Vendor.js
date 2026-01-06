@@ -15,10 +15,10 @@ const vendorSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    services: [
+    servicesProvided: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Service",
+        ref: "ServiceSubCategory",
       },
     ],
     location: {

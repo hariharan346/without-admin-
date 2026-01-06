@@ -17,6 +17,15 @@ import {
 import { useState, useEffect } from "react";
 import api from "@/lib/axios";
 import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 // Fetch vendor's assigned requests
 const fetchVendorRequests = async () => {
@@ -42,6 +51,12 @@ const updateRequestStatus = async ({ requestId, statusType }) => {
   return data;
 };
 
+// Contact support
+const contactSupport = async (supportData) => {
+  const { data } = await api.post("/vendors/support", supportData);
+  return data;
+};
+
 const VendorDashboard = () => {
   const { user, logout } = useAuth();
   const queryClient = useQueryClient();
@@ -54,6 +69,9 @@ const VendorDashboard = () => {
   });
 
   const [isAvailable, setIsAvailable] = useState(vendorProfile?.isAvailable ?? true);
+  const [supportIssueType, setSupportIssueType] = useState("");
+  const [supportDescription, setSupportDescription] = useState("");
+  
 
   useEffect(() => {
     if (vendorProfile) {
@@ -104,9 +122,41 @@ const VendorDashboard = () => {
     },
   });
 
+  const supportMutation = useMutation({
+    mutationFn: contactSupport,
+    onSuccess: () => {
+      toast({
+        title: "Support Request Sent",
+        description: "We have received your request and will get back to you shortly.",
+      });
+      setSupportIssueType("");
+      setSupportDescription("");
+    },
+    onError: (error) => {
+      toast({
+        title: "Submission Failed",
+        description: error.response?.data?.message || "Could not send support request.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleAvailabilityToggle = () => {
     availabilityMutation.mutate(!isAvailable);
     setIsAvailable((prev) => !prev);
+  };
+
+  const handleSupportSubmit = (e) => {
+    e.preventDefault();
+    if (!supportIssueType) {
+      toast({
+        title: "Issue Type Required",
+        description: "Please select an issue type.",
+        variant: "destructive",
+      });
+      return;
+    }
+    supportMutation.mutate({ issueType: supportIssueType, description: supportDescription });
   };
 
   const getStatusBadge = (status) => {
@@ -252,6 +302,7 @@ const VendorDashboard = () => {
           )}
 
           <div className="grid md:grid-cols-2 gap-8">
+            {/* Assigned Requests */}
             <div className="bg-card rounded-2xl p-6 border border-border">
               <h2 className="text-xl font-semibold mb-4">Your Assigned Requests</h2>
               {isLoadingAssigned ? (
@@ -270,6 +321,55 @@ const VendorDashboard = () => {
                   </Link>
                 </div>
               )}
+            </div>
+
+            {/* Support Center */}
+            <div className="bg-card rounded-2xl p-6 border border-border">
+              <h2 className="text-xl font-semibold mb-4">Support Center</h2>
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-medium">Contact Us</h3>
+                  <p className="text-sm text-muted-foreground">For urgent issues, please call us at:</p>
+                  <p className="text-lg font-semibold text-primary mt-1">+1 (800) 555-1234</p>
+                </div>
+                <hr className="border-border" />
+                <div>
+                  <h3 className="font-medium">Submit a Support Ticket</h3>
+                  <p className="text-sm text-muted-foreground mb-4">For non-urgent issues, please use the form below.</p>
+                  <form onSubmit={handleSupportSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Issue Type *</Label>
+                      <Select onValueChange={setSupportIssueType} value={supportIssueType}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select an issue type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Technical Glitch">Technical Glitch</SelectItem>
+                          <SelectItem value="Payment Issue">Payment Issue</SelectItem>
+                          <SelectItem value="Account Problem">Account Problem</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Description</Label>
+                      <Textarea
+                        value={supportDescription}
+                        onChange={(e) => setSupportDescription(e.target.value)}
+                        placeholder="Please describe the issue in detail."
+                        rows={4}
+                      />
+                    </div>
+                    <Button
+                      type="submit"
+                      className="w-full"
+                      disabled={supportMutation.isLoading}
+                    >
+                      {supportMutation.isLoading ? "Submitting..." : "Submit Ticket"}
+                    </Button>
+                  </form>
+                </div>
+              </div>
             </div>
           </div>
         </div>

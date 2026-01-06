@@ -8,7 +8,7 @@ import jwt from "jsonwebtoken";
  * REGISTER
  */
 export const register = async (req, res) => {   
-  const { name, email, password, role, companyName, phone, services, location } =
+  const { name, email, password, role, companyName, phone,servicesProvided, location } =
     req.body;
 
   try {
@@ -35,7 +35,7 @@ export const register = async (req, res) => {
         user: user._id,
         companyName,
         phone,
-        services,
+       servicesProvided,
         location,
       });
     }

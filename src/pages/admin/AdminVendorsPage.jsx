@@ -106,7 +106,7 @@ const AdminVendorsPage = () => {
                     <TableCell>{vendor.user.email}</TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
-                        {vendor.services.map((service) => (
+                        {vendor.servicesProvided.map((service) => (
                           <Badge key={service._id} variant="secondary">
                             {service.name}
                           </Badge>

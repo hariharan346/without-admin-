@@ -26,20 +26,20 @@ const VendorRegisterPage = () => {
     companyName: "",
     location: "",
   });
-  const [selectedServices, setSelectedServices] = useState([]); // Stores array of service _ids
+  const [selectedSubServices, setSelectedSubServices] = useState([]); // Stores array of service _ids
   const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const { data: categories, isLoading: isLoadingCategories } = useQuery({
-    queryKey: ["categoriesWithServices"],
+    queryKey: ["categories"],
     queryFn: fetchCategoriesWithServices,
   });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (selectedServices.length === 0) {
+    if (selectedSubServices.length === 0) {
       toast({
         title: "Select Services",
         description: "Please select at least one service.",
@@ -52,7 +52,7 @@ const VendorRegisterPage = () => {
       await register({
         ...formData,
         role: "vendor",
-        services: selectedServices, // Send array of service _ids
+        servicesProvided: selectedSubServices, // Send array of service _ids
       });
       setIsLoading(false);
 
@@ -71,11 +71,11 @@ const VendorRegisterPage = () => {
     }
   };
 
-  const toggleService = (serviceId) => {
-    setSelectedServices((prev) =>
-      prev.includes(serviceId)
-        ? prev.filter((id) => id !== serviceId)
-        : [...prev, serviceId]
+  const toggleSubService = (subServiceId) => {
+    setSelectedSubServices((prev) =>
+      prev.includes(subServiceId)
+        ? prev.filter((id) => id !== subServiceId)
+        : [...prev, subServiceId]
     );
   };
 
@@ -174,16 +174,16 @@ const VendorRegisterPage = () => {
                         <AccordionTrigger>{category.name}</AccordionTrigger>
                         <AccordionContent>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-2">
-                            {category.services.map((service) => (
+                            {category.subcategories.map((subcategory) => (
                               <label
-                                key={service._id}
+                                key={subcategory._id}
                                 className="flex items-center gap-2 text-sm cursor-pointer"
                               >
                                 <Checkbox
-                                  checked={selectedServices.includes(service._id)}
-                                  onCheckedChange={() => toggleService(service._id)}
+                                  checked={selectedSubServices.includes(subcategory._id)}
+                                  onCheckedChange={() => toggleSubService(subcategory._id)}
                                 />
-                                {service.name}
+                                {subcategory.name}
                               </label>
                             ))}
                           </div>

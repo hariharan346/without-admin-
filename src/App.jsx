@@ -15,6 +15,7 @@ import ServicePage from "./pages/ServicePage";
 import VendorProfilePage from "./pages/VendorProfilePage";
 import ServiceRequestPage from "./pages/ServiceRequestPage";
 import OpenServiceRequestPage from "./pages/OpenServiceRequestPage";
+import ReportVendorPage from "./pages/ReportVendorPage";
 import ServiceRequestDetailsPage from "./pages/ServiceRequestDetailsPage";
 import NotFound from "./pages/NotFound";
 import AdminLoginPage from "./pages/admin/AdminLoginPage";
@@ -22,6 +23,7 @@ import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import AdminUsersPage from "./pages/admin/AdminUsersPage";
 import AdminVendorsPage from "./pages/admin/AdminVendorsPage";
 import AdminCategoriesPage from "./pages/admin/AdminCategoriesPage";
+import AdminReportsPage from "./pages/admin/AdminReportsPage";
 import AdminProtectedRoute from "./routes/AdminProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -49,6 +51,7 @@ const App = () => (
             element={<CustomerDashboard />}
           />
           <Route path="/open-request" element={<OpenServiceRequestPage />} />
+          <Route path="/report-vendor/:vendorId" element={<ReportVendorPage />} />
         </Route>
 
         {/* VENDOR */}
@@ -66,6 +69,7 @@ const App = () => (
           <Route path="/admin/users" element={<AdminUsersPage />} />
           <Route path="/admin/vendors" element={<AdminVendorsPage />} />
           <Route path="/admin/categories" element={<AdminCategoriesPage />} />
+          <Route path="/admin/reports" element={<AdminReportsPage />} />
         </Route>
 
         <Route path="*" element={<NotFound />} />

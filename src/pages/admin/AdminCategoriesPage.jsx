@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Navbar } from "@/components/layout/Navbar";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -49,24 +49,6 @@ const deleteCategory = async (id) => {
   await api.delete(`/categories/${id}`);
 };
 
-const createSubCategory = async (newSubCategory) => {
-  const { data } = await api.post(`/subcategories`, newSubCategory, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
-  return data;
-};
-
-const updateSubCategory = async ({ id, updatedSubCategory }) => {
-  const { data } = await api.put(`/subcategories/${id}`, updatedSubCategory, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
-  return data;
-};
-
-const deleteSubCategory = async (id) => {
-  await api.delete(`/subcategories/${id}`);
-};
-
 const createService = async (newService) => {
   const { data } = await api.post(`/services`, newService, {
     headers: { "Content-Type": "multipart/form-data" },
@@ -91,21 +73,17 @@ const AdminCategoriesPage = () => {
     const { toast } = useToast();
   
     const [isCategoryFormOpen, setIsCategoryFormOpen] = useState(false);
-    const [isSubCategoryFormOpen, setIsSubCategoryFormOpen] = useState(false);
     const [isServiceFormOpen, setIsServiceFormOpen] = useState(false);
   
     const [categoryFormData, setCategoryFormData] = useState({ name: "", description: "" });
-    const [subcategoryFormData, setSubcategoryFormData] = useState({ name: "", description: "" });
     const [serviceFormData, setServiceFormData] = useState({ name: "", description: "" });
     const [imageFile, setImageFile] = useState(null);
     const [imagePreview, setImagePreview] = useState("");
   
     const [editingCategory, setEditingCategory] = useState(null);
-    const [editingSubCategory, setEditingSubCategory] = useState(null);
     const [editingService, setEditingService] = useState(null);
   
     const [currentCategoryId, setCurrentCategoryId] = useState(null);
-    const [currentSubCategoryId, setCurrentSubCategoryId] = useState(null);
   
     // Fetch Categories
     const {
@@ -148,36 +126,6 @@ const AdminCategoriesPage = () => {
       },
       onError: (error) => toast({ title: "Error", description: error.response?.data?.message, variant: "destructive" }),
     });
-  
-    // SubCategory Mutations
-    const subCategoryCreateMutation = useMutation({
-      mutationFn: createSubCategory,
-      onSuccess: () => {
-        queryClient.invalidateQueries(["categories"]);
-        toast({ title: "Subcategory created" });
-        setIsSubCategoryFormOpen(false);
-      },
-      onError: (error) => toast({ title: "Error", description: error.response?.data?.message, variant: "destructive" }),
-    });
-
-    const subCategoryUpdateMutation = useMutation({
-        mutationFn: updateSubCategory,
-        onSuccess: () => {
-          queryClient.invalidateQueries(["categories"]);
-          toast({ title: "Subcategory updated" });
-          setIsSubCategoryFormOpen(false);
-        },
-        onError: (error) => toast({ title: "Error", description: error.response?.data?.message, variant: "destructive" }),
-      });
-    
-      const subCategoryDeleteMutation = useMutation({
-        mutationFn: deleteSubCategory,
-        onSuccess: () => {
-          queryClient.invalidateQueries(["categories"]);
-          toast({ title: "Subcategory deleted" });
-        },
-        onError: (error) => toast({ title: "Error", description: error.response?.data?.message, variant: "destructive" }),
-      });
   
     // Service Mutations
     const serviceCreateMutation = useMutation({
@@ -234,28 +182,13 @@ const AdminCategoriesPage = () => {
       }
     };
   
-    const handleSubCategoryFormSubmit = () => {
-        const formData = new FormData();
-        formData.append("name", subcategoryFormData.name);
-        formData.append("description", subcategoryFormData.description);
-        if (currentCategoryId) {
-            formData.append("category", currentCategoryId);
-        }
-        if (imageFile) {
-            formData.append("image", imageFile);
-        }
-
-      if (editingSubCategory) {
-        subCategoryUpdateMutation.mutate({ id: editingSubCategory._id, updatedSubCategory: formData });
-      } else {
-        subCategoryCreateMutation.mutate(formData);
-      }
-    };
-  
     const handleServiceFormSubmit = () => {
         const formData = new FormData();
         formData.append("name", serviceFormData.name);
         formData.append("description", serviceFormData.description);
+        if (currentCategoryId) {
+            formData.append("category", currentCategoryId);
+        }
         if (imageFile) {
             formData.append("image", imageFile);
         }
@@ -271,25 +204,16 @@ const AdminCategoriesPage = () => {
         setEditingCategory(category);
         setCategoryFormData(category ? { name: category.name, description: category.description } : { name: "", description: "" });
         setImageFile(null);
-        setImagePreview(category?.image ? `${api.defaults.baseURL}${category.image}`: "");
+        setImagePreview(category?.image ? `http://localhost:5000${category.image}`: "");
         setIsCategoryFormOpen(true);
       };
       
-      const openSubCategoryDialog = (categoryId, subCategory = null) => {
+      const openServiceDialog = (categoryId, service = null) => {
         setCurrentCategoryId(categoryId);
-        setEditingSubCategory(subCategory);
-        setSubcategoryFormData(subCategory ? { name: subCategory.name, description: subCategory.description } : { name: "", description: "" });
-        setImageFile(null);
-        setImagePreview(subCategory?.image ? `${api.defaults.baseURL}${subCategory.image}`: "");
-        setIsSubCategoryFormOpen(true);
-      };
-      
-      const openServiceDialog = (subCategoryId, service = null) => {
-        setCurrentSubCategoryId(subCategoryId);
         setEditingService(service);
         setServiceFormData(service ? { name: service.name, description: service.description } : { name: "", description: "" });
         setImageFile(null);
-        setImagePreview(service?.image ? `${api.defaults.baseURL}${service.image}`: "");
+        setImagePreview(service?.image && service.image.startsWith('/') ? `http://localhost:5000${service.image}`: "");
         setIsServiceFormOpen(true);
       };
 
@@ -300,9 +224,9 @@ const AdminCategoriesPage = () => {
         <div className="min-h-screen bg-background">
           <Navbar />
           <main className="container mx-auto py-8 px-4">
-            <div className="flex justify-between items-center mb-8">
-              <h1 className="text-3xl font-bold text-foreground">Manage Categories, Subcategories, and Services</h1>
-              <Button onClick={() => openCategoryDialog()}>Add Category</Button>
+            <div className="flex flex-col md:flex-row justify-between md:items-center mb-8 gap-4">
+              <h1 className="text-3xl font-bold text-foreground">Manage Categories</h1>
+              <Button onClick={() => openCategoryDialog()} className="w-full md:w-auto">Add Category</Button>
             </div>
     
                         {categories && categories.length > 0 ? (
@@ -312,83 +236,47 @@ const AdminCategoriesPage = () => {
                                 <CardHeader className="p-0">
                                   <AccordionItem value={category._id} className="border-b-0">
                                     <AccordionTrigger className="p-4 hover:no-underline">
-                                      <div className="flex justify-between w-full items-center">
+                                      <div className="flex flex-col sm:flex-row justify-between w-full items-start sm:items-center">
                                         <div className="flex items-center gap-4 text-left">
-                                          <img src={category.image ? `${api.defaults.baseURL}${category.image}` : "/placeholder.png"} alt={category.name} className="w-16 h-16 rounded-md object-cover" />
+                                          <img src={category.image && category.image.startsWith('/') ? `http://localhost:5000${category.image}` : "/placeholder.png"} alt={category.name} className="w-16 h-16 rounded-md object-cover" />
                                           <div>
                                             <span className="font-semibold text-lg line-clamp-1">{category.name}</span>
                                             <p className="text-sm text-muted-foreground line-clamp-2">{category.description}</p>
+
                                           </div>
                                         </div>
                                         <div className="flex gap-2">
-                                          <Button variant="outline" size="sm" onClick={(e) => {e.stopPropagation(); openCategoryDialog(category);}}>Edit</Button>
-                                          <Button variant="destructive" size="sm" onClick={(e) => {e.stopPropagation(); categoryDeleteMutation.mutate(category._id);}}>Delete</Button>
+                                          <div role="button" className={buttonVariants({ variant: "outline", size: "sm" })} onClick={(e) => {e.stopPropagation(); openCategoryDialog(category);}}>Edit</div>
+                                          <div role="button" className={buttonVariants({ variant: "destructive", size: "sm" })} onClick={(e) => {e.stopPropagation(); categoryDeleteMutation.mutate(category._id);}}>Delete</div>
                                         </div>
                                       </div>
                                     </AccordionTrigger>
                                     <AccordionContent className="p-4 pt-0">
                                       <div className="pl-4 border-l-2">
-                                        <div className="flex justify-between items-center mb-4">
-                                          <h4 className="font-semibold text-xl">Subcategories</h4>
-                                          <Button size="sm" onClick={() => openSubCategoryDialog(category._id)}>Add Subcategory</Button>
+                                        <div className="flex justify-between items-center mb-3">
+                                            <h5 className="font-semibold text-lg">Services</h5>
+                                            <Button size="sm" onClick={() => openServiceDialog(category._id)}>Add Service</Button>
                                         </div>
-                                        {category.subcategories?.length > 0 ? (
-                                          <Accordion type="single" collapsible className="w-full">
-                                            {category.subcategories.map((sub) => (
-                                              <Card className="mb-2" key={sub._id}>
-                                                <CardHeader className="p-0">
-                                                  <AccordionItem value={sub._id} className="border-b-0">
-                                                    <AccordionTrigger className="p-3 hover:no-underline">
-                                                        <div className="flex justify-between w-full items-center">
-                                                          <div className="flex items-center gap-3 text-left">
-                                                            <img src={sub.image ? `${api.defaults.baseURL}${sub.image}` : "/placeholder.png"} alt={sub.name} className="w-12 h-12 rounded-md object-cover" />
-                                                            <div>
-                                                              <span className="font-medium line-clamp-1">{sub.name}</span>
-                                                              <p className="text-xs text-muted-foreground line-clamp-1">{sub.description}</p>
-                                                            </div>
-                                                          </div>
-                                                            <div className="flex gap-2">
-                                                                <Button variant="outline" size="sm" onClick={(e) => {e.stopPropagation(); openSubCategoryDialog(category._id, sub);}}>Edit</Button>
-                                                                <Button variant="destructive" size="sm" onClick={(e) => {e.stopPropagation(); subCategoryDeleteMutation.mutate(sub._id);}}>Delete</Button>
-                                                            </div>
-                                                        </div>
-                                                    </AccordionTrigger>
-                                                    <AccordionContent className="p-3 pt-0">
-                                                      <div className="pl-4 border-l-2">
-                                                        <div className="flex justify-between items-center mb-3">
-                                                            <h5 className="font-semibold text-lg">Services</h5>
-                                                            <Button size="sm" onClick={() => openServiceDialog(sub._id)}>Add Service</Button>
-                                                        </div>
-                                                        {sub.services?.length > 0 ? (
-                                                          <div className="space-y-2">
-                                                            {sub.services.map((service) => (
-                                                                <Card key={service._id} className="p-3 flex justify-between items-center">
-                                                                    <div className="flex items-center gap-3">
-                                                                      <img src={service.image ? `${api.defaults.baseURL}${service.image}` : "/placeholder.png"} alt={service.name} className="w-10 h-10 rounded-md object-cover" />
-                                                                      <div>
-                                                                        <span className="font-medium line-clamp-1">{service.name}</span>
-                                                                        <p className="text-xs text-muted-foreground line-clamp-1">{service.description}</p>
-                                                                      </div>
-                                                                    </div>
-                                                                    <div className="flex gap-2">
-                                                                        <Button variant="outline" size="sm" onClick={() => openServiceDialog(sub._id, service)}>Edit</Button>
-                                                                        <Button variant="destructive" size="sm" onClick={() => serviceDeleteMutation.mutate(service._id)}>Delete</Button>
-                                                                    </div>
-                                                                </Card>
-                                                            ))}
-                                                          </div>
-                                                        ) : (
-                                                          <p className="text-muted-foreground text-sm">No services added yet.</p>
-                                                        )}
+                                        {category.services?.length > 0 ? (
+                                          <div className="space-y-2">
+                                            {category.services.map((service) => (
+                                                <Card key={service._id} className="p-3 flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                                                    <div className="flex items-center gap-3">
+                                                      <img src={service.image ? `http://localhost:5000${service.image}` : "/placeholder.png"} alt={service.name} className="w-10 h-10 rounded-md object-cover" />
+                                                      <div>
+                                                        <span className="font-medium line-clamp-1">{service.name}</span>
+                                                        <p className="text-xs text-muted-foreground line-clamp-1">{service.description}</p>
                                                       </div>
-                                                    </AccordionContent>
-                                                  </AccordionItem>
-                                                </CardHeader>
-                                              </Card>
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <Button variant="outline" size="sm" onClick={() => openServiceDialog(category._id, service)}>Edit</Button>
+                                                        <Button variant="destructive" size="sm" onClick={() => serviceDeleteMutation.mutate(service._id)}>Delete</Button>
+                                                    </div>
+                                                </Card>
                                             ))}
-                                          </Accordion>
+                                          </div>
                                         ) : (
-                                          <p className="text-muted-foreground text-sm">No subcategories added yet.</p>
+                                          <p className="text-muted-foreground text-sm">No services added yet.</p>
                                         )}
                                       </div>
                                     </AccordionContent>
@@ -415,35 +303,21 @@ const AdminCategoriesPage = () => {
                   <Label htmlFor="categoryDescription" className="block text-sm font-medium text-gray-700">Description</Label>
                   <Textarea id="categoryDescription" placeholder="Description" value={categoryFormData.description} onChange={(e) => setCategoryFormData({...categoryFormData, description: e.target.value})} />
                 </div>
+
                 <div className="mb-4">
                   <Label htmlFor="categoryImage" className="block text-sm font-medium text-gray-700">Image</Label>
                   <Input id="categoryImage" type="file" onChange={handleFileChange} />
                   {imagePreview && <img src={imagePreview} alt="preview" className="mt-2 max-w-full h-auto object-cover rounded-md" />}
                 </div>
-                <DialogFooter><Button onClick={handleCategoryFormSubmit}>Save</Button></DialogFooter>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button onClick={handleCategoryFormSubmit}>Save</Button>
+                  </DialogClose>
+                </DialogFooter>
               </DialogContent>
             </Dialog>
 
-            {/* SubCategory Dialog */}
-            <Dialog open={isSubCategoryFormOpen} onOpenChange={setIsSubCategoryFormOpen}>
-                <DialogContent>
-                    <DialogHeader><DialogTitle>{editingSubCategory ? "Edit" : "Add"} Subcategory</DialogTitle></DialogHeader>
-                    <div className="mb-4">
-                      <Label htmlFor="subcategoryName" className="block text-sm font-medium text-gray-700">Name</Label>
-                      <Input id="subcategoryName" placeholder="Name" value={subcategoryFormData.name} onChange={(e) => setSubcategoryFormData({...subcategoryFormData, name: e.target.value})} />
-                    </div>
-                    <div className="mb-4">
-                      <Label htmlFor="subcategoryDescription" className="block text-sm font-medium text-gray-700">Description</Label>
-                      <Textarea id="subcategoryDescription" placeholder="Description" value={subcategoryFormData.description} onChange={(e) => setSubcategoryFormData({...subcategoryFormData, description: e.target.value})} />
-                    </div>
-                    <div className="mb-4">
-                      <Label htmlFor="subcategoryImage" className="block text-sm font-medium text-gray-700">Image</Label>
-                      <Input id="subcategoryImage" type="file" onChange={handleFileChange} />
-                      {imagePreview && <img src={imagePreview} alt="preview" className="mt-2 max-w-full h-auto object-cover rounded-md" />}
-                    </div>
-                    <DialogFooter><Button onClick={handleSubCategoryFormSubmit}>Save</Button></DialogFooter>
-                </DialogContent>
-            </Dialog>
+
 
             {/* Service Dialog */}
             <Dialog open={isServiceFormOpen} onOpenChange={setIsServiceFormOpen}>
@@ -462,7 +336,11 @@ const AdminCategoriesPage = () => {
                       <Input id="serviceImage" type="file" onChange={handleFileChange} />
                       {imagePreview && <img src={imagePreview} alt="preview" className="mt-2 max-w-full h-auto object-cover rounded-md" />}
                     </div>
-                    <DialogFooter><Button onClick={handleServiceFormSubmit}>Save</Button></DialogFooter>
+                    <DialogFooter>
+                      <DialogClose asChild>
+                        <Button onClick={handleServiceFormSubmit}>Save</Button>
+                      </DialogClose>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
 

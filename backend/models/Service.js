@@ -23,6 +23,11 @@ const serviceSchema = new mongoose.Schema(
       type: String,
       required: false,
     },
+    category: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'ServiceCategory',
+      required: true,
+    },
   },
   { timestamps: true }
 );

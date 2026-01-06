@@ -4,6 +4,7 @@ import {
   getVendorProfile,
   toggleVendorAvailability,
   updateVendorServices,
+  contactAdmin,
 } from "../controllers/vendor.controller.js";
 import { protect } from "../middleware/auth.middleware.js";
 import { vendor } from "../middleware/role.middleware.js";
@@ -17,5 +18,6 @@ router.get("/:id", getVendorProfile);
 // Vendor-specific routes
 router.put("/availability", protect, vendor, toggleVendorAvailability);
 router.put("/services", protect, vendor, updateVendorServices);
+router.post("/support", protect, vendor, contactAdmin);
 
 export default router;

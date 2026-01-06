@@ -114,7 +114,7 @@ export const getAllVendors = async (req, res) => {
   try {
     const vendors = await Vendor.find({})
       .populate('user', 'name email')
-      .populate('services', 'name slug'); // Populate service details
+      .populate('servicesProvided', 'name slug'); // Populate service details
     res.json(vendors);
   } catch (error) {
     console.error(error);

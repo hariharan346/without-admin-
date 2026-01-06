@@ -1,6 +1,7 @@
 import Vendor from "../models/Vendor.js";
 import Service from "../models/Service.js";
 import User from "../models/User.js";
+import sendEmail from "../utils/sendEmail.js";
 
 // @desc    Get all vendors
 // @route   GET /api/vendors
@@ -95,5 +96,40 @@ export const updateVendorServices = async (req, res) => {
     res.json({ message: "Vendor services updated successfully", services: vendor.services });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Contact admin for support
+// @route   POST /api/vendors/support
+// @access  Vendor
+export const contactAdmin = async (req, res) => {
+  const { issueType, description } = req.body;
+  const vendor = await Vendor.findOne({ user: req.user.id }).populate("user", "name email");
+
+  if (!vendor) {
+    return res.status(404).json({ message: "Vendor not found" });
+  }
+
+  const subject = `Vendor Support Request: ${issueType}`;
+  const message = `
+    <h2>Vendor Support Request</h2>
+    <p><strong>Vendor Name:</strong> ${vendor.user.name}</p>
+    <p><strong>Vendor Company:</strong> ${vendor.companyName}</p>
+    <p><strong>Vendor Email:</strong> ${vendor.user.email}</p>
+    <p><strong>Issue Type:</strong> ${issueType}</p>
+    <hr />
+    <h3>Description:</h3>
+    <p>${description}</p>
+  `;
+
+  try {
+    await sendEmail({
+      subject,
+      message,
+    });
+    res.json({ message: "Support request sent successfully." });
+  } catch (error) {
+    console.error("Error sending support email:", error);
+    res.status(500).json({ message: "Failed to send support request." });
   }
 };

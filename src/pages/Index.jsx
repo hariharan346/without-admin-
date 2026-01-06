@@ -37,7 +37,7 @@ const Index = () => {
     isLoading: isLoadingCategories,
     isError: isErrorCategories,
   } = useQuery({
-    queryKey: ["homepageCategories"],
+    queryKey: ["categories"],
     queryFn: fetchCategories,
   });
 

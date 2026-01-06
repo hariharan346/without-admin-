@@ -1,14 +1,17 @@
 import ServiceCategory from "../models/ServiceCategory.js";
 import Service from "../models/Service.js";
-import ServiceSubCategory from "../models/ServiceSubCategory.js";
 import slugify from "../utils/slugify.js";
 
 // @desc    Create a new service category
 // @route   POST /api/categories
 // @access  Admin
 export const createCategory = async (req, res) => {
+  console.log("--- Create Category ---");
+  console.log("Body:", req.body);
+  console.log("File:", req.file);
+
   const { name, description } = req.body;
-  const image = req.file ? `/uploads/${req.file.filename}` : null;
+  const image = req.file ? `/uploads/categories/${req.file.filename}` : null;
 
   try {
     const slug = slugify(name);
@@ -29,6 +32,7 @@ export const createCategory = async (req, res) => {
 
     res.status(201).json(category);
   } catch (error) {
+    console.error("Error creating category:", error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -66,7 +70,7 @@ export const updateCategory = async (req, res) => {
       category.description = description;
     }
     if (req.file) {
-      category.image = `/uploads/${req.file.filename}`;
+      category.image = `/uploads/categories/${req.file.filename}`;
     }
 
     const updatedCategory = await category.save();
@@ -89,11 +93,10 @@ export const deleteCategory = async (req, res) => {
       return res.status(404).json({ message: "Category not found" });
     }
 
-    // Also delete subcategories when a category is deleted
-    await ServiceSubCategory.deleteMany({ category: category._id });
+    await Service.deleteMany({ category: category._id });
 
     await category.deleteOne();
-    res.json({ message: "Category and its subcategories removed" });
+    res.json({ message: "Category and its services removed" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -106,9 +109,13 @@ export const getCategoryBySlug = async (req, res) => {
   const { slug } = req.params;
 
   try {
-    const category = await ServiceCategory.findOne({ slug }).populate(
-      "services"
-    );
+    const category = await ServiceCategory.findOne({ slug }).populate({
+      path: 'services',
+      populate: {
+        path: 'category',
+        model: 'ServiceCategory'
+      }
+    });
 
     if (!category) {
       return res.status(404).json({ message: "Category not found" });
@@ -125,13 +132,7 @@ export const getCategoryBySlug = async (req, res) => {
 // @access  Public
 export const getAllCategories = async (req, res) => {
   try {
-    const categories = await ServiceCategory.find({}).populate({
-      path: "subcategories",
-      populate: {
-        path: "services",
-        model: "Service",
-      },
-    });
+    const categories = await ServiceCategory.find({}).populate("services");
     res.json(categories);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -142,10 +143,15 @@ export const getAllCategories = async (req, res) => {
 // @route   POST /api/services
 // @access  Admin
 export const createService = async (req, res) => {
-  const { name, description } = req.body;
-  const image = req.file ? `/uploads/${req.file.filename}` : null;
+  const { name, description, category: categoryId } = req.body;
+  const image = req.file ? `/uploads/services/${req.file.filename}` : null;
 
   try {
+    const category = await ServiceCategory.findById(categoryId);
+    if (!category) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+
     const slug = slugify(name);
     const serviceExists = await Service.findOne({ slug });
 
@@ -160,7 +166,11 @@ export const createService = async (req, res) => {
       slug,
       description,
       image,
+      category: categoryId,
     });
+
+    category.services.push(service._id);
+    await category.save();
 
     res.status(201).json(service);
   } catch (error) {
@@ -199,7 +209,7 @@ export const updateService = async (req, res) => {
       service.description = description;
     }
     if (req.file) {
-      service.image = `/uploads/${req.file.filename}`;
+      service.image = `/uploads/services/${req.file.filename}`;
     }
 
     const updatedService = await service.save();
@@ -222,9 +232,9 @@ export const deleteService = async (req, res) => {
       return res.status(404).json({ message: "Service not found" });
     }
 
-    // Remove service reference from subcategories
-    await ServiceSubCategory.updateMany(
-      { services: id },
+    // Remove service reference from categories
+    await ServiceCategory.updateMany(
+      { _id: service.category },
       { $pull: { services: id } }
     );
 

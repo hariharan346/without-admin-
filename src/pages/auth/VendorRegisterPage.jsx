@@ -27,6 +27,7 @@ const VendorRegisterPage = () => {
     location: "",
   });
   const [selectedServicesWithPrices, setSelectedServicesWithPrices] = useState([]); // Stores array of {serviceId, minPrice, maxPrice}
+  const [isLoading, setIsLoading] = useState(false); // Reintroduce isLoading state
 
   const { data: categories, isLoading: isLoadingCategories } = useQuery({
     queryKey: ["categories"],

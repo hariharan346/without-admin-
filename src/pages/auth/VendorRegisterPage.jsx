@@ -28,6 +28,9 @@ const VendorRegisterPage = () => {
   });
   const [selectedServicesWithPrices, setSelectedServicesWithPrices] = useState([]); // Stores array of {serviceId, minPrice, maxPrice}
   const [isLoading, setIsLoading] = useState(false); // Reintroduce isLoading state
+  const { register } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast(); // Initialize useToast hook
 
   const { data: categories, isLoading: isLoadingCategories } = useQuery({
     queryKey: ["categories"],

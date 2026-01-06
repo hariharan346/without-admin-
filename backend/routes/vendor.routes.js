@@ -3,7 +3,10 @@ import {
   getAllVendors,
   getVendorProfile,
   toggleVendorAvailability,
-  updateVendorServices,
+  getVendorServices,
+  manageVendorServices,
+  deleteVendorService,
+  getVendorTrustScore,
   contactAdmin,
 } from "../controllers/vendor.controller.js";
 import { protect } from "../middleware/auth.middleware.js";

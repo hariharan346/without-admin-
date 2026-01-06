@@ -292,6 +292,59 @@ export const completeRequest = async (req, res) => {
   }
 };
 
+// @desc    User cancels a service request
+// @route   PATCH /api/requests/:id/user-cancel
+// @access  Private (User)
+export const userCancelRequest = async (req, res) => {
+  const { cancelReason } = req.body;
+
+  try {
+    const request = await ServiceRequest.findById(req.params.id);
+
+    if (!request) {
+      return res.status(404).json({ message: "Request not found" });
+    }
+
+    if (request.user.toString() !== req.user.id.toString()) {
+      return res.status(403).json({ message: "Not authorized to cancel this request" });
+    }
+
+    if (request.status === "completed") {
+      return res.status(400).json({ message: "Completed requests cannot be cancelled" });
+    }
+    
+    if (request.status === "cancelled") {
+        return res.status(400).json({ message: "Request is already cancelled" });
+    }
+
+    const originalStatus = request.status; // Store original status before changing
+
+    request.status = "cancelled";
+    request.cancelledBy = req.user.id;
+    request.cancelReason = cancelReason || "Cancelled by user";
+    request.cancelledAt = new Date();
+
+    // If a vendor was assigned, clear it since the request is cancelled by user
+    if (request.vendor) {
+        // Find the vendor to update job counts
+        const vendorProfile = await Vendor.findById(request.vendor);
+        if (vendorProfile) {
+            // If the request was accepted, decrement acceptedJobs and increment cancelledJobs
+            if (originalStatus === "accepted") {
+                vendorProfile.acceptedJobs = Math.max(0, vendorProfile.acceptedJobs - 1);
+            }
+            vendorProfile.cancelledJobs += 1;
+            await vendorProfile.save();
+            await calculateTrustScore(vendorProfile._id);
+        }
+        request.vendor = undefined;
+    }
+    await request.save();
+
+    const populatedRequest = await ServiceRequest.findById(request._id)
+      .populate("user", "name email")
+      .populate("vendor", "companyName phone location")
+      .populate("service", "name description");
 
     res.json(populatedRequest);
   } catch (error) {

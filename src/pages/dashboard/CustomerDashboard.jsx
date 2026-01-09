@@ -174,7 +174,7 @@ const CustomerDashboard = () => {
                 Your Service Requests ({requests?.length || 0})
               </h2>
               <Button asChild>
-                <Link to="/open-request">Create Open Request</Link>
+                <Link to="/categories">Book New Services</Link>
               </Button>
             </div>
             {isLoading ? (

@@ -32,10 +32,10 @@ export const Navbar = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
             <div className="w-9 h-9 bg-gradient-primary rounded-xl flex items-center justify-center shadow-sm">
-              <span className="text-primary-foreground font-bold text-lg">S</span>
+              <span className="text-primary-foreground font-bold text-lg">ʀ2ꜱ</span>
             </div>
             <span className="text-xl font-bold">
-              Servi<span className="text-gradient">Connect</span>
+              Raise<span className="text-gradient">-to-Slove</span>
             </span>
           </Link>
 
@@ -71,8 +71,8 @@ export const Navbar = () => {
                             user.role === "vendor"
                               ? "/vendor/dashboard"
                               : user.role === "admin"
-                              ? "/admin/dashboard"
-                              : "/customer/dashboard"
+                                ? "/admin/dashboard"
+                                : "/customer/dashboard"
                           }
                         >
                           Dashboard
@@ -126,33 +126,33 @@ export const Navbar = () => {
           {/* Mobile Menu Overlay */}
           {isMenuOpen && (
             <div className="absolute top-16 left-0 w-full h-screen bg-background/95 backdrop-blur-lg md:hidden flex flex-col items-center justify-center gap-8">
-                <Link to="/" className="text-2xl font-medium" onClick={() => setIsMenuOpen(false)}>Home</Link>
-                <Link to="/categories" className="text-2xl font-medium" onClick={() => setIsMenuOpen(false)}>Services</Link>
-                {!isAuthPage && (
-                  <>
-                    {user ? (
-                      <>
-                        <Link to={user.role === "vendor" ? "/vendor/dashboard" : user.role === "admin" ? "/admin/dashboard" : "/customer/dashboard"} className="text-2xl font-medium" onClick={() => setIsMenuOpen(false)}>Dashboard</Link>
-                        {user.role === "admin" && (
-                            <>
-                                <Link to="/admin/users" className="text-2xl font-medium" onClick={() => setIsMenuOpen(false)}>Users</Link>
-                                <Link to="/admin/vendors" className="text-2xl font-medium" onClick={() => setIsMenuOpen(false)}>Vendors</Link>
-                            </>
-                        )}
-                        <Button variant="destructive" size="lg" onClick={() => { handleLogout(); setIsMenuOpen(false); }}>Logout</Button>
-                      </>
-                    ) : (
-                      <div className="flex flex-col items-center gap-8">
-                        <Button variant="ghost" size="lg" asChild>
-                          <Link to="/auth/login" onClick={() => setIsMenuOpen(false)}>Login</Link>
-                        </Button>
-                        <Button size="lg" asChild>
-                          <Link to="/auth/register" onClick={() => setIsMenuOpen(false)}>Register</Link>
-                        </Button>
-                      </div>
-                    )}
-                  </>
-                )}
+              <Link to="/" className="text-2xl font-medium" onClick={() => setIsMenuOpen(false)}>Home</Link>
+              <Link to="/categories" className="text-2xl font-medium" onClick={() => setIsMenuOpen(false)}>Services</Link>
+              {!isAuthPage && (
+                <>
+                  {user ? (
+                    <>
+                      <Link to={user.role === "vendor" ? "/vendor/dashboard" : user.role === "admin" ? "/admin/dashboard" : "/customer/dashboard"} className="text-2xl font-medium" onClick={() => setIsMenuOpen(false)}>Dashboard</Link>
+                      {user.role === "admin" && (
+                        <>
+                          <Link to="/admin/users" className="text-2xl font-medium" onClick={() => setIsMenuOpen(false)}>Users</Link>
+                          <Link to="/admin/vendors" className="text-2xl font-medium" onClick={() => setIsMenuOpen(false)}>Vendors</Link>
+                        </>
+                      )}
+                      <Button variant="destructive" size="lg" onClick={() => { handleLogout(); setIsMenuOpen(false); }}>Logout</Button>
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center gap-8">
+                      <Button variant="ghost" size="lg" asChild>
+                        <Link to="/auth/login" onClick={() => setIsMenuOpen(false)}>Login</Link>
+                      </Button>
+                      <Button size="lg" asChild>
+                        <Link to="/auth/register" onClick={() => setIsMenuOpen(false)}>Register</Link>
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           )}
         </div>

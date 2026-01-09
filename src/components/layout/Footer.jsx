@@ -22,17 +22,18 @@ export const Footer = () => {
           <div className="space-y-4">
             <Link to="/" className="flex items-center gap-2">
               <div className="w-9 h-9 bg-gradient-primary rounded-xl flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-lg">S</span>
+                <span className="text-primary-foreground font-bold text-lg">ʀ2ꜱ</span>
               </div>
-              <span className="text-xl font-bold">ServiConnect</span>
+              <span className="text-xl font-bold">Raise-to-Slove</span>
             </Link>
             <p className="text-primary-foreground/70 text-sm leading-relaxed">
               Your trusted platform for finding reliable local service providers.
               Quality services at your doorstep.
+              dev by <a href="https://github.com/">@hariharan</a>
             </p>
             <div className="flex items-center gap-2 text-sm text-primary-foreground/70">
               <MapPin className="w-4 h-4" />
-              <span>Cityville, India</span>
+              <span>Tamil Nadu, India</span>
             </div>
           </div>
 

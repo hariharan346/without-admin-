@@ -12,6 +12,7 @@ import api from "@/lib/axios";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Trash } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 // Fetch all users
 const fetchUsers = async () => {

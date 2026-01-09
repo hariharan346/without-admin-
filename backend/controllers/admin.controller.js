@@ -73,7 +73,8 @@ export const getOverviewStats = async (req, res) => {
 // @access  Private/Admin
 export const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find({ role: { $ne: 'vendor' } }).select('-password');
+    // Exclude both vendors and admins, show only regular users
+    const users = await User.find({ role: { $nin: ['vendor', 'admin'] } }).select('-password');
     res.json(users);
   } catch (error) {
     console.error(error);
@@ -114,7 +115,7 @@ export const getAllVendors = async (req, res) => {
   try {
     const vendors = await Vendor.find({})
       .populate('user', 'name email')
-      .populate('servicesProvided', 'name slug'); // Populate service details
+      .populate('servicesProvided.serviceId', 'name slug'); // Correctly populate nested serviceId
     res.json(vendors);
   } catch (error) {
     console.error(error);

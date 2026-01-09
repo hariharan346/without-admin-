@@ -8,7 +8,7 @@ import { calculateTrustScore } from "./vendor.controller.js"; // Import calculat
 // @route   POST /api/requests
 // @access  Private (User)
 export const createRequest = async (req, res) => {
-  const { vendorId, serviceId, description, date, requestType = "OPEN" } = req.body;
+  const { vendorId, serviceId, description, date } = req.body;
   const userId = req.user.id; // Customer making the request
 
   try {
@@ -16,27 +16,26 @@ export const createRequest = async (req, res) => {
     if (!service) {
       return res.status(404).json({ message: "Service not found" });
     }
-
+    
+    // Determine request type based on vendorId presence
+    const requestType = vendorId ? "TARGETED" : "OPEN";
+    
     let requestData = {
       user: userId,
       service: serviceId,
       description,
       date,
       status: "pending",
-      requestType,
+      requestType, // Set determined request type
     };
 
+    // If it's a targeted request, validate the vendor
     if (requestType === "TARGETED") {
-      if (!vendorId) {
-        return res.status(400).json({ message: "Targeted request requires a vendorId" });
-      }
       const vendor = await Vendor.findById(vendorId);
       if (!vendor) {
         return res.status(404).json({ message: "Targeted Vendor not found" });
       }
       requestData.targetedVendor = vendorId;
-    } else if (requestType === "OPEN" && vendorId) {
-        return res.status(400).json({ message: "Open request cannot have a pre-selected vendor" });
     }
 
     const request = await ServiceRequest.create(requestData);

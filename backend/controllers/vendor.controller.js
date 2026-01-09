@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Vendor from "../models/Vendor.js";
 import Service from "../models/Service.js";
 import User from "../models/User.js";
@@ -7,36 +8,50 @@ import sendEmail from "../utils/sendEmail.js";
 // @route   GET /api/vendors
 // @access  Public
 export const getAllVendors = async (req, res) => {
-  const { serviceId } = req.query; // Changed from serviceSlug to serviceId
+  const { serviceId } = req.query;
 
   try {
-    let vendors;
+    let query = {};
     if (serviceId) {
-      // Find vendors that provide this specific service
-      vendors = await Vendor.find({ "servicesProvided.serviceId": serviceId })
-        .populate("user", "name email")
-        .populate("servicesProvided.serviceId"); // Populate the service details within servicesProvided
-    } else {
-      vendors = await Vendor.find({})
-        .populate("user", "name email")
-        .populate("servicesProvided.serviceId"); // Populate the service details within servicesProvided
+      // Cast serviceId to ObjectId for MongoDB query
+      const serviceObjectId = new mongoose.Types.ObjectId(serviceId);
+      query["servicesProvided.serviceId"] = serviceObjectId;
     }
 
-    // Format the response to include service details and prices
+    const vendors = await Vendor.find(query)
+      .populate("user", "name email")
+      .populate("servicesProvided.serviceId")
+      .sort({ trustScore: -1 }); // Sort by trustScore descending
+
+    // Format the response to include specific vendor details and price range for the matched service
     const formattedVendors = vendors.map(vendor => {
       const vendorObj = vendor.toObject();
-      vendorObj.servicesProvided = vendorObj.servicesProvided.map(serviceEntry => {
-        const serviceData = serviceEntry.serviceId; // The populated Service object
-        return {
-          _id: serviceData._id,
-          name: serviceData.name,
-          description: serviceData.description,
-          image: serviceData.image,
-          minPrice: serviceEntry.minPrice,
-          maxPrice: serviceEntry.maxPrice,
-        };
-      });
-      return vendorObj;
+      let matchedServicePrices = { minPrice: null, maxPrice: null };
+
+      if (serviceId) {
+        const matchedServiceEntry = vendorObj.servicesProvided.find(
+          s => s.serviceId && s.serviceId._id.toString() === serviceId
+        );
+        if (matchedServiceEntry) {
+          matchedServicePrices.minPrice = matchedServiceEntry.minPrice;
+          matchedServicePrices.maxPrice = matchedServiceEntry.maxPrice;
+        }
+      }
+
+      // Remove the full servicesProvided array from the top level if serviceId was queried
+      // and only return the details relevant for the matched service.
+      delete vendorObj.servicesProvided;
+
+      return {
+        _id: vendorObj._id,
+        companyName: vendorObj.companyName,
+        phone: vendorObj.phone, // Include phone as per problem, assuming it's safe for public view
+        location: vendorObj.location,
+        trustScore: vendorObj.trustScore,
+        ...matchedServicePrices, // Add minPrice and maxPrice for the matched service
+        // Include user details if populated
+        user: vendorObj.user ? { _id: vendorObj.user._id, name: vendorObj.user.name, email: vendorObj.user.email } : null,
+      };
     });
 
     res.json(formattedVendors);
@@ -149,12 +164,20 @@ export const manageVendorServices = async (req, res) => {
     }
 
     const newServicesProvided = [];
+    const seenServiceIds = new Set();
+
     for (const service of servicesProvided) {
       const { serviceId, minPrice, maxPrice } = service;
 
       if (!serviceId || minPrice === undefined || maxPrice === undefined) {
         return res.status(400).json({ message: "Each service must have serviceId, minPrice, and maxPrice" });
       }
+
+      // Check for duplicate serviceId in the incoming array
+      if (seenServiceIds.has(serviceId.toString())) {
+        return res.status(400).json({ message: `Duplicate serviceId ${serviceId} found in request.` });
+      }
+      seenServiceIds.add(serviceId.toString());
 
       // Check if serviceId is valid
       const existingService = await Service.findById(serviceId);
@@ -195,6 +218,7 @@ export const manageVendorServices = async (req, res) => {
 
     res.json({ message: "Vendor services updated successfully", services: formattedServices });
   } catch (error) {
+    console.error("manageVendorServices: Error:", error); // Enhanced error logging
     res.status(500).json({ message: error.message });
   }
 };

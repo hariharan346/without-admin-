@@ -58,6 +58,12 @@ const contactSupport = async (supportData) => {
   return data;
 };
 
+// Fetch vendor's provided services
+const fetchVendorProvidedServices = async () => {
+  const { data } = await api.get("/vendors/me/services");
+  return data;
+};
+
 const VendorDashboard = () => {
   const { user, logout } = useAuth();
   const queryClient = useQueryClient();
@@ -69,18 +75,28 @@ const VendorDashboard = () => {
     enabled: user?.role === "vendor", // Only fetch if user is a vendor
   });
 
+  const { data: vendorProvidedServices, isLoading: isLoadingVendorServices } = useQuery({
+    queryKey: ["vendorProvidedServices"],
+    queryFn: fetchVendorProvidedServices,
+    enabled: user?.role === "vendor",
+  });
+
   const [isAvailable, setIsAvailable] = useState(false);
   const [vendorServices, setVendorServices] = useState([]); // State to manage services offered by the vendor
   const [allAvailableServices, setAllAvailableServices] = useState([]); // State to manage all services from admin
   const [supportIssueType, setSupportIssueType] = useState("");
   const [supportDescription, setSupportDescription] = useState("");
   
-
   useEffect(() => {
     if (vendorProfile) {
       setIsAvailable(vendorProfile.isAvailable);
-      // Assuming vendorProfile.servicesProvided is already populated correctly from /auth/me
-      setVendorServices(vendorProfile.servicesProvided.map(service => ({
+    }
+  }, [vendorProfile]);
+
+  useEffect(() => {
+    if (vendorProvidedServices) {
+      // Map the services to include all necessary fields for display
+      setVendorServices(vendorProvidedServices.map(service => ({
         serviceId: service._id,
         name: service.name,
         description: service.description,
@@ -89,7 +105,7 @@ const VendorDashboard = () => {
         maxPrice: service.maxPrice,
       })));
     }
-  }, [vendorProfile]);
+  }, [vendorProvidedServices]);
 
   // Fetch all services to allow vendor to add new ones
   const { data: allServicesData, isLoading: isLoadingAllServices } = useQuery({
@@ -137,6 +153,7 @@ const VendorDashboard = () => {
       });
       queryClient.invalidateQueries(["vendorProfile"]);
       queryClient.invalidateQueries(["vendorServices"]); // Invalidate to refetch vendor's services
+      queryClient.invalidateQueries(["vendors"]); // Invalidate user-facing vendor lists
     },
     onError: (error) => {
       toast({
@@ -156,6 +173,7 @@ const VendorDashboard = () => {
       });
       queryClient.invalidateQueries(["vendorProfile"]);
       queryClient.invalidateQueries(["vendorServices"]); // Invalidate to refetch vendor's services
+      queryClient.invalidateQueries(["vendors"]); // Invalidate user-facing vendor lists
     },
     onError: (error) => {
       toast({
@@ -477,8 +495,15 @@ const VendorDashboard = () => {
                         maxPrice: newMaxPrice,
                       },
                     ];
-                    setVendorServices(updatedServices);
-                    e.target.reset();
+                    // Immediately trigger mutation with the updated list
+                    manageServicesMutation.mutate(
+                      updatedServices.map((s) => ({
+                        serviceId: s.serviceId,
+                        minPrice: s.minPrice,
+                        maxPrice: s.maxPrice,
+                      }))
+                    );
+                    e.target.reset(); // Reset form fields
                   } else if (vendorServices.some(s => s.serviceId === serviceToAdd._id)) {
                     toast({
                       title: "Service Already Added",

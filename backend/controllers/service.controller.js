@@ -257,6 +257,7 @@ export const getServiceBySlug = async (req, res) => {
     if (!service) {
       return res.status(404).json({ message: "Service not found" });
     }
+    console.log("SERVICE FOUND:", service); // Debugging log
 
     res.json(service);
   } catch (error) {

@@ -36,6 +36,14 @@ export const VendorCard = ({ vendor, serviceId, index = 0 }) => {
               <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                 {vendor.companyName}
               </p>
+              {vendor.minPrice && vendor.maxPrice && (
+                <div className="mt-2">
+                  <p className="text-sm font-medium text-foreground">Price Range</p>
+                  <p className="text-lg font-semibold text-primary">
+                    ${vendor.minPrice} - ${vendor.maxPrice}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 

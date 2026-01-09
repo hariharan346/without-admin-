@@ -32,7 +32,8 @@ const ServicePage = () => {
   const { serviceSlug } = useParams(); 
   const { user, logout } = useAuth();
 
-  const [showAvailableOnly, setShowAvailableOnly] = useState(false);
+  // Removed showAvailableOnly state and its related filtering logic
+  // const [showAvailableOnly, setShowAvailableOnly] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
   const {
@@ -42,6 +43,7 @@ const ServicePage = () => {
   } = useQuery({
     queryKey: ["service", serviceSlug],
     queryFn: () => fetchServiceBySlug(serviceSlug),
+    enabled: !!serviceSlug,
   });
 
   const {
@@ -49,24 +51,16 @@ const ServicePage = () => {
     isLoading: isLoadingVendors,
     isError: isErrorVendors,
   } = useQuery({
-    queryKey: ["vendors", service?.id], // Use service.id here
-    queryFn: () => fetchVendorsByService(service._id), // Pass service._id
-    enabled: !!service, // Only fetch vendors if service data is available
+    queryKey: ["vendors", service?._id],
+    queryFn: () => fetchVendorsByService(service._id),
+    enabled: !!service,
   });
 
-  const filteredVendors = useMemo(() => {
+  // The filteredVendors useMemo is simplified as frontend should not re-filter
+  const displayVendors = useMemo(() => {
     if (!vendors) return [];
-    let result = [...vendors];
-
-    if (showAvailableOnly) {
-      result = result.filter((v) => v.isAvailable);
-    }
-
-    // Sort by trustScore if it exists
-    result.sort((a, b) => (b.trustScore || 0) - (a.trustScore || 0));
-
-    return result;
-  }, [vendors, showAvailableOnly]);
+    return vendors; // Directly use vendors from API, no further client-side filtering by service is needed
+  }, [vendors]);
 
   if (isLoadingService || isLoadingVendors) {
     return (
@@ -116,11 +110,14 @@ const ServicePage = () => {
             </Link>
 
             <div className="flex items-center gap-4">
-              <img
-                src={`${api.defaults.baseURL}${service.image}`}
-                alt={service.name}
-                className="w-24 h-24 rounded-lg object-cover"
-              />
+              {/* Ensure service.image is correctly prefixed if it's a relative path */}
+              {service.image && (
+                <img
+                  src={`${api.defaults.baseURL}${service.image.startsWith('/') ? '' : '/'}${service.image}`}
+                  alt={service.name}
+                  className="w-24 h-24 rounded-lg object-cover"
+                />
+              )}
               <div>
                 <h1 className="text-3xl md:text-4xl font-bold text-foreground">
                   {service.name}
@@ -140,7 +137,7 @@ const ServicePage = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <p className="text-muted-foreground">
                 <span className="font-semibold text-foreground">
-                  {filteredVendors.length}
+                  {displayVendors.length}
                 </span>{" "}
                 service providers found
               </p>
@@ -156,12 +153,13 @@ const ServicePage = () => {
                   Filters
                 </Button>
 
+                {/* Removed Available Only Switch */}
                 <div
                   className={`${
                     showFilters ? "flex" : "hidden"
                   } sm:flex items-center gap-4`}
                 >
-                  <div className="flex items-center gap-2">
+                  {/* <div className="flex items-center gap-2">
                     <Switch
                       id="available"
                       checked={showAvailableOnly}
@@ -170,15 +168,15 @@ const ServicePage = () => {
                     <Label htmlFor="available" className="text-sm cursor-pointer">
                       Available Only
                     </Label>
-                  </div>
+                  </div> */}
                 </div>
               </div>
             </div>
 
             {/* Vendor Cards */}
-            {filteredVendors.length > 0 ? (
+            {displayVendors.length > 0 ? (
               <div className="space-y-4">
-                {filteredVendors.map((vendor, index) => (
+                {displayVendors.map((vendor, index) => (
                   <VendorCard
                     key={vendor._id}
                     vendor={vendor}
@@ -192,7 +190,8 @@ const ServicePage = () => {
                 <p className="text-muted-foreground text-lg">
                   No service providers found for this service.
                 </p>
-                {showAvailableOnly && (
+                {/* Removed "Show all providers" button */}
+                {/* {showAvailableOnly && (
                   <Button
                     variant="link"
                     onClick={() => setShowAvailableOnly(false)}
@@ -200,7 +199,7 @@ const ServicePage = () => {
                   >
                     Show all providers
                   </Button>
-                )}
+                )} */}
               </div>
             )}
           </div>

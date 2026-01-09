@@ -31,11 +31,24 @@ export const register = async (req, res) => {
         await User.findByIdAndDelete(user._id);
         return res.status(400).json({ message: "Please provide all vendor details" });
       }
+      // Ensure servicesProvided is an array and transform it for the Vendor model
+      if (!Array.isArray(servicesProvided) || servicesProvided.length === 0) {
+        // Rollback user creation
+        await User.findByIdAndDelete(user._id);
+        return res.status(400).json({ message: "Please select at least one service." });
+      }
+
+      const servicesToSave = servicesProvided.map(serviceId => ({
+        serviceId,
+        minPrice: 0, // Default price, vendor can update later
+        maxPrice: 0, // Default price, vendor can update later
+      }));
+
       await Vendor.create({
         user: user._id,
         companyName,
         phone,
-       servicesProvided,
+        servicesProvided: servicesToSave,
         location,
       });
     }

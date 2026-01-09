@@ -14,6 +14,7 @@ import {
 import { protect } from "../middleware/auth.middleware.js";
 import { admin } from "../middleware/role.middleware.js";
 import upload from "../middleware/upload.middleware.js";
+import { getVendorsByServiceSlug } from "../controllers/vendor.controller.js";
 
 const router = express.Router();
 
@@ -24,6 +25,7 @@ router.get("/categories/:slug", getCategoryBySlug);
 // Public routes for services
 router.get("/services", getAllServices);
 router.get("/services/:slug", getServiceBySlug);
+router.get("/services/:slug/vendors", getVendorsByServiceSlug);
 
 // Admin only routes for categories
 router.post("/categories", protect, admin, upload.single("image"), createCategory);

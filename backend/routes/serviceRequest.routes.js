@@ -8,12 +8,13 @@ import {
   acceptRequest,
   rejectRequest,
   completeRequest,
-  userCancelRequest, // New function for user cancellation
-  vendorCancelRequest, // New function for vendor cancellation
+  userCancelRequest,
+  vendorCancelRequest,
+  rateVendor,
 } from "../controllers/serviceRequest.controller.js";
 
 import { protect } from "../middleware/auth.middleware.js";
-import { vendor } from "../middleware/role.middleware.js"; // Import vendor middleware
+import { vendor } from "../middleware/role.middleware.js";
 
 const router = express.Router();
 
@@ -22,7 +23,7 @@ const router = express.Router();
  */
 router.post("/", protect, createRequest);
 router.get("/my", protect, getUserRequests);
-router.patch("/:id/user-cancel", protect, userCancelRequest); // User cancels with reason
+router.patch("/:id/user-cancel", protect, userCancelRequest);
 
 /**
  * VENDOR ROUTES
@@ -32,7 +33,7 @@ router.get("/open", protect, vendor, getOpenRequests);
 router.put("/:id/accept", protect, vendor, acceptRequest);
 router.put("/:id/reject", protect, vendor, rejectRequest);
 router.put("/:id/complete", protect, vendor, completeRequest);
-router.patch("/:id/vendor-cancel", protect, vendor, vendorCancelRequest); // Vendor cancels with reason
+router.patch("/:id/vendor-cancel", protect, vendor, vendorCancelRequest);
 
 /**
  * COMMON

@@ -39,7 +39,7 @@ const App = () => (
         <Route path="/auth/vendor-register" element={<VendorRegisterPage />} />
         <Route path="/categories" element={<CategoriesPage />} />
         <Route path="/category/:categoryId" element={<CategoryPage />} />
-        <Route path="/service/:serviceId" element={<ServicePage />} />
+        <Route path="/service/:serviceSlug" element={<ServicePage />} />
         <Route path="/vendor/:vendorId" element={<VendorProfilePage />} />
         <Route path="/request/vendor/:vendorId" element={<ServiceRequestPage />} />
         <Route path="/request/:requestId" element={<ServiceRequestDetailsPage />} />

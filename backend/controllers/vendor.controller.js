@@ -15,7 +15,12 @@ export const getAllVendors = async (req, res) => {
     if (serviceId) {
       // Cast serviceId to ObjectId for MongoDB query
       const serviceObjectId = new mongoose.Types.ObjectId(serviceId);
-      query["servicesProvided.serviceId"] = serviceObjectId;
+      query["servicesProvided"] = {
+        $elemMatch: {
+          serviceId: serviceObjectId,
+          isActive: true
+        }
+      };
     }
 
     const vendors = await Vendor.find(query)
@@ -167,7 +172,7 @@ export const manageVendorServices = async (req, res) => {
     const seenServiceIds = new Set();
 
     for (const service of servicesProvided) {
-      const { serviceId, minPrice, maxPrice } = service;
+      const { serviceId, minPrice, maxPrice, isActive } = service;
 
       if (!serviceId || minPrice === undefined || maxPrice === undefined) {
         return res.status(400).json({ message: "Each service must have serviceId, minPrice, and maxPrice" });
@@ -194,6 +199,7 @@ export const manageVendorServices = async (req, res) => {
         serviceId: existingService._id,
         minPrice: Number(minPrice),
         maxPrice: Number(maxPrice),
+        isActive: isActive !== undefined ? isActive : true,
       });
     }
 
@@ -213,6 +219,7 @@ export const manageVendorServices = async (req, res) => {
         image: serviceData.image,
         minPrice: serviceEntry.minPrice,
         maxPrice: serviceEntry.maxPrice,
+        isActive: serviceEntry.isActive,
       };
     });
 
@@ -325,5 +332,123 @@ export const contactAdmin = async (req, res) => {
   } catch (error) {
     console.error("Error sending support email:", error);
     res.status(500).json({ message: "Failed to send support request." });
+  }
+};
+
+// @desc    Get vendors by service slug
+// @route   GET /api/services/:slug/vendors
+// @access  Public
+export const getVendorsByServiceSlug = async (req, res) => {
+  try {
+    const { slug } = req.params;
+
+    // 1️⃣ Find service by slug
+    const service = await Service.findOne({ slug });
+
+    if (!service) {
+      return res.status(404).json({ message: "Service Not Found" });
+    }
+
+    // 2️⃣ Find vendors providing this service (and active)
+    const query = {
+      "servicesProvided": {
+        $elemMatch: {
+          serviceId: service._id,
+          isActive: { $ne: false } // Matches true or missing
+        }
+      },
+      isAvailable: true
+    };
+
+    const vendors = await Vendor.find(query).populate("user", "name email mobile");
+
+    // 3️⃣ Format response to include specific price for this service
+    const formattedVendors = vendors.map(vendor => {
+      const vendorObj = vendor.toObject();
+
+      // Find the specific service details
+      const serviceEntry = vendorObj.servicesProvided.find(
+        (s) => s.serviceId.toString() === service._id.toString()
+      );
+
+      return {
+        _id: vendorObj._id,
+        companyName: vendorObj.companyName,
+        location: vendorObj.location,
+        phone: vendorObj.phone,
+        user: vendorObj.user,
+        trustScore: vendorObj.trustScore,
+        minPrice: serviceEntry ? serviceEntry.minPrice : 0,
+        maxPrice: serviceEntry ? serviceEntry.maxPrice : 0,
+        isActive: serviceEntry ? serviceEntry.isActive !== false : false,
+        isAvailable: vendorObj.isAvailable, // Pass global availability
+        ratingAverage: vendorObj.ratingAverage || 0, // Include rating
+        totalJobs: vendorObj.totalJobs || 0 // Include total jobs for rating context
+      };
+    });
+
+    res.json(formattedVendors);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+// GET /api/vendors/me/services
+export const getMyServices = async (req, res) => {
+  try {
+    const vendor = await Vendor.findOne({ user: req.user._id })
+      .populate("services");
+
+    if (!vendor) {
+      return res.status(404).json({ message: "Vendor not found" });
+    }
+
+    res.json(vendor.services);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// PUT /api/vendors/me/services
+export const addMyService = async (req, res) => {
+  try {
+    const { serviceId, minPrice, maxPrice } = req.body;
+
+    const vendor = await Vendor.findOne({ user: req.user._id });
+    if (!vendor) {
+      return res.status(404).json({ message: "Vendor not found" });
+    }
+
+    if (!vendor.services.includes(serviceId)) {
+      vendor.services.push(serviceId);
+    }
+
+    vendor.pricing = {
+      ...vendor.pricing,
+      [serviceId]: { minPrice, maxPrice },
+    };
+
+    await vendor.save();
+    res.json(vendor.services);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// PUT /api/vendors/availability
+export const updateAvailability = async (req, res) => {
+  try {
+    const { available } = req.body;
+
+    const vendor = await Vendor.findOne({ user: req.user._id });
+    if (!vendor) {
+      return res.status(404).json({ message: "Vendor not found" });
+    }
+
+    vendor.available = available;
+    await vendor.save();
+
+    res.json({ available: vendor.available });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };

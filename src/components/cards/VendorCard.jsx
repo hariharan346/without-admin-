@@ -1,9 +1,75 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Star, MapPin, Clock, Phone, CheckCircle2, XCircle } from "lucide-react";
+import { Star, MapPin, Phone, CheckCircle2, XCircle, CalendarIcon, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/components/ui/use-toast";
+import api from "@/lib/axios";
+import { useAuth } from "@/context/AuthContext";
 
 export const VendorCard = ({ vendor, serviceId, index = 0 }) => {
+  const [isBookingOpen, setIsBookingOpen] = useState(false);
+  const [date, setDate] = useState("");
+  const [description, setDescription] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleBookService = async () => {
+    if (!user) {
+      navigate("/auth/login");
+      return;
+    }
+    if (!date || !description) {
+      toast({
+        title: "Error",
+        description: "Please provide both date and description.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await api.post("/requests", {
+        vendorId: vendor._id,
+        serviceId: serviceId, // Ensure serviceId is passed!
+        date,
+        description,
+      });
+
+      toast({
+        title: "Success",
+        description: "Service request sent successfully!",
+      });
+      setIsBookingOpen(false);
+      setDate("");
+      setDescription("");
+      // navigate("/customer/dashboard"); // Optional: Navigate user to dashboard
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to book service.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div
       className="bg-card rounded-2xl p-6 border border-border card-hover animate-fade-in"
@@ -44,10 +110,18 @@ export const VendorCard = ({ vendor, serviceId, index = 0 }) => {
                   </p>
                 </div>
               )}
+              {/* Display Rating if available (New) */}
+              {vendor.ratingAverage > 0 && (
+                <div className="mt-2 flex items-center text-yellow-500">
+                  <Star className="w-4 h-4 fill-current mr-1" />
+                  <span className="font-medium text-sm">{vendor.ratingAverage.toFixed(1)}</span>
+                  <span className="text-muted-foreground text-xs ml-1">({vendor.totalJobs} jobs)</span>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Rating & Location */}
+          {/* Location */}
           <div className="flex flex-wrap items-center gap-4 mt-4">
             <div className="flex items-center gap-1 text-muted-foreground text-sm">
               <MapPin className="w-4 h-4" />
@@ -58,29 +132,59 @@ export const VendorCard = ({ vendor, serviceId, index = 0 }) => {
 
         {/* Actions */}
         <div className="flex flex-col gap-2 lg:w-40">
-          <Button asChild variant="default" className="w-full">
-            <Link
-              to={`/vendor/${vendor._id}${
-                serviceId ? `?service=${serviceId}` : ""
-              }`}
-            >
-              View Profile
-            </Link>
-          </Button>
-          {vendor.isAvailable && (
-            <Button asChild variant="hero" className="w-full">
-              <Link
-                to={`/request/${vendor._id}${
-                  serviceId ? `?service=${serviceId}` : ""
-                }`}
-              >
-                Request Service
-              </Link>
-            </Button>
-          )}
+          {/* Book Service Button (Replaces View Profile) */}
+          <Dialog open={isBookingOpen} onOpenChange={setIsBookingOpen}>
+            <DialogTrigger asChild>
+              <Button variant="default" className="w-full" disabled={!vendor.isAvailable}>
+                Book Service
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Book Service</DialogTitle>
+                <DialogDescription>
+                  Request a service from {vendor.companyName}.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="date">Date</Label>
+                  <Input
+                    id="date"
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="description">Description (Problem/Requirement)</Label>
+                  <Textarea
+                    id="description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Describe what you need..."
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button onClick={handleBookService} disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    "Confirm Request"
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Call Now Button */}
           <a
             href={`tel:${vendor.phone}`}
-            className="flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors py-2"
+            className="flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors py-2 border rounded-md"
           >
             <Phone className="w-4 h-4" />
             Call Now

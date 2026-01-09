@@ -26,8 +26,11 @@ const serviceRequestSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["pending", "accepted", "completed", "cancelled"],
+      enum: ["pending", "accepted", "completed", "cancelled", "declined"],
       default: "pending",
+    },
+    declineReason: {
+      type: String,
     },
     requestType: {
       type: String,
@@ -40,17 +43,25 @@ const serviceRequestSchema = new mongoose.Schema(
       required: false,
     },
     cancelledBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-        required: false,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: false,
     },
     cancelReason: {
-        type: String,
-        required: false,
+      type: String,
+      required: false,
     },
     cancelledAt: {
-        type: Date,
-        required: false,
+      type: Date,
+      required: false,
+    },
+    otp: {
+      type: String, // Store 6-digit OTP
+    },
+    rating: {
+      type: Number,
+      min: 1,
+      max: 5,
     },
   },
   { timestamps: true }

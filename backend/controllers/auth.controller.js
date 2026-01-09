@@ -7,8 +7,8 @@ import jwt from "jsonwebtoken";
 /**
  * REGISTER
  */
-export const register = async (req, res) => {   
-  const { name, email, password, role, companyName, phone,servicesProvided, location } =
+export const register = async (req, res) => {
+  const { name, email, password, role, companyName, phone, servicesProvided, location } =
     req.body;
 
   try {
@@ -38,11 +38,24 @@ export const register = async (req, res) => {
         return res.status(400).json({ message: "Please select at least one service." });
       }
 
-      const servicesToSave = servicesProvided.map(serviceId => ({
-        serviceId,
-        minPrice: 0, // Default price, vendor can update later
-        maxPrice: 0, // Default price, vendor can update later
-      }));
+      const servicesToSave = servicesProvided.map(service => {
+        // If service is just an ID (legacy/simple check), use defaults
+        if (typeof service === 'string') {
+          return {
+            serviceId: service,
+            minPrice: 0,
+            maxPrice: 0,
+            isActive: true
+          };
+        }
+        // If service is an object with details
+        return {
+          serviceId: service.serviceId,
+          minPrice: Number(service.minPrice) || 0,
+          maxPrice: Number(service.maxPrice) || 0,
+          isActive: true
+        };
+      });
 
       await Vendor.create({
         user: user._id,

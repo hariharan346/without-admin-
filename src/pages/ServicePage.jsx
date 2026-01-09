@@ -23,8 +23,8 @@ const fetchServiceBySlug = async (slug) => {
   return data;
 };
 
-const fetchVendorsByService = async (serviceId) => {
-  const { data } = await api.get(`/vendors?serviceId=${serviceId}`);
+const fetchVendorsByServiceSlug = async (slug) => {
+  const { data } = await api.get(`/services/${slug}/vendors`);
   return data;
 };
 
@@ -46,15 +46,16 @@ const ServicePage = () => {
     enabled: !!serviceSlug,
   });
 
-  const {
-    data: vendors,
-    isLoading: isLoadingVendors,
-    isError: isErrorVendors,
-  } = useQuery({
-    queryKey: ["vendors", service?._id],
-    queryFn: () => fetchVendorsByService(service._id),
-    enabled: !!service,
-  });
+const {
+  data: vendors,
+  isLoading: isLoadingVendors,
+  isError: isErrorVendors,
+} = useQuery({
+  queryKey: ["vendors", serviceSlug],
+  queryFn: () => fetchVendorsByServiceSlug(serviceSlug),
+  enabled: !!serviceSlug,
+});
+
 
   // The filteredVendors useMemo is simplified as frontend should not re-filter
   const displayVendors = useMemo(() => {

@@ -47,8 +47,8 @@ const toggleAvailability = async (isAvailable) => {
 };
 
 // Update request status (accept, reject, complete)
-const updateRequestStatus = async ({ requestId, statusType }) => {
-  const { data } = await api.put(`/requests/${requestId}/${statusType}`);
+const updateRequestStatus = async ({ requestId, statusType, reason, otp }) => {
+  const { data } = await api.put(`/requests/${requestId}/${statusType}`, { declineReason: reason, otp });
   return data;
 };
 
@@ -86,7 +86,7 @@ const VendorDashboard = () => {
   const [allAvailableServices, setAllAvailableServices] = useState([]); // State to manage all services from admin
   const [supportIssueType, setSupportIssueType] = useState("");
   const [supportDescription, setSupportDescription] = useState("");
-  
+
   useEffect(() => {
     if (vendorProfile) {
       setIsAvailable(vendorProfile.isAvailable);
@@ -103,6 +103,7 @@ const VendorDashboard = () => {
         image: service.image,
         minPrice: service.minPrice,
         maxPrice: service.maxPrice,
+        isActive: service.isActive !== undefined ? service.isActive : true, // Default to true if missing
       })));
     }
   }, [vendorProvidedServices]);
@@ -145,7 +146,14 @@ const VendorDashboard = () => {
   });
 
   const manageServicesMutation = useMutation({
-    mutationFn: (services) => api.put("/vendors/me/services", { servicesProvided: services }),
+    mutationFn: (services) => api.put("/vendors/me/services", {
+      servicesProvided: services.map(s => ({
+        serviceId: s.serviceId,
+        minPrice: s.minPrice,
+        maxPrice: s.maxPrice,
+        isActive: s.isActive // Send isActive
+      }))
+    }),
     onSuccess: (data) => {
       toast({
         title: "Services Updated",
@@ -267,6 +275,7 @@ const VendorDashboard = () => {
         return (
           <Badge variant="destructive">
             <XCircle className="w-3 h-3 mr-1" />
+            {/* Check if cancelledBy is defined and compare (ignoring for now to keep simple or implementing check) */}
             Cancelled
           </Badge>
         );
@@ -292,6 +301,14 @@ const VendorDashboard = () => {
         <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
           Customer: {request.user.name} - {request.description}
         </p>
+
+        {/* Show Cancellation Reason */}
+        {request.status === "cancelled" && request.cancelReason && (
+          <div className="mt-2 text-sm text-destructive border border-destructive/20 bg-destructive/10 p-2 rounded-md">
+            <span className="font-semibold">Cancelled:</span> {request.cancelReason}
+          </div>
+        )}
+
         <div className="flex gap-2 mt-4">
           {request.status === "pending" && (
             <Button
@@ -312,7 +329,10 @@ const VendorDashboard = () => {
               variant="outline"
               onClick={(e) => {
                 e.preventDefault(); // Prevent navigating
-                statusMutation.mutate({ requestId: request._id, statusType: "reject" });
+                const reason = window.prompt("Please enter a reason for declining this request:");
+                if (reason) {
+                  statusMutation.mutate({ requestId: request._id, statusType: "reject", reason });
+                }
               }}
               disabled={statusMutation.isPending}
             >
@@ -326,7 +346,10 @@ const VendorDashboard = () => {
               variant="success"
               onClick={(e) => {
                 e.preventDefault(); // Prevent navigating
-                statusMutation.mutate({ requestId: request._id, statusType: "complete" });
+                const otp = window.prompt("Enter the OTP provided by the customer to complete this job:");
+                if (otp) {
+                  statusMutation.mutate({ requestId: request._id, statusType: "complete", otp });
+                }
               }}
               disabled={statusMutation.isPending}
             >
@@ -432,6 +455,20 @@ const VendorDashboard = () => {
                         min="0"
                         className="w-full sm:w-28"
                       />
+                      <div className="flex items-center gap-1">
+                        <Switch
+                          checked={service.isActive}
+                          onCheckedChange={(checked) => {
+                            const updatedServices = vendorServices.map((s) =>
+                              s.serviceId === service.serviceId
+                                ? { ...s, isActive: checked }
+                                : s
+                            );
+                            setVendorServices(updatedServices);
+                          }}
+                        />
+                        <span className="text-xs text-muted-foreground">{service.isActive ? 'Active' : 'Inactive'}</span>
+                      </div>
                       <Button
                         variant="destructive"
                         size="sm"

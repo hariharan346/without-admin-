@@ -19,7 +19,9 @@ import { useToast } from "@/components/ui/use-toast";
 import api from "@/lib/axios";
 import { useAuth } from "@/context/AuthContext";
 
-export const VendorCard = ({ vendor, serviceId, index = 0 }) => {
+import { useQueryClient } from "@tanstack/react-query";
+
+export const VendorCard = ({ vendor, serviceId, index = 0, requestStatus }) => {
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [date, setDate] = useState("");
   const [description, setDescription] = useState("");
@@ -27,6 +29,7 @@ export const VendorCard = ({ vendor, serviceId, index = 0 }) => {
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const handleBookService = async () => {
     if (!user) {
@@ -67,6 +70,8 @@ export const VendorCard = ({ vendor, serviceId, index = 0 }) => {
       });
     } finally {
       setIsSubmitting(false);
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries(["userRequests"]);
     }
   };
 
@@ -115,7 +120,9 @@ export const VendorCard = ({ vendor, serviceId, index = 0 }) => {
                 <div className="mt-2 flex items-center text-yellow-500">
                   <Star className="w-4 h-4 fill-current mr-1" />
                   <span className="font-medium text-sm">{vendor.ratingAverage.toFixed(1)}</span>
-                  <span className="text-muted-foreground text-xs ml-1">({vendor.totalJobs} jobs)</span>
+                  <span className="text-muted-foreground text-xs ml-1">
+                    ({vendor.reviewCount} {vendor.reviewCount === 1 ? 'Review' : 'Reviews'})
+                  </span>
                 </div>
               )}
             </div>
@@ -135,9 +142,15 @@ export const VendorCard = ({ vendor, serviceId, index = 0 }) => {
           {/* Book Service Button (Replaces View Profile) */}
           <Dialog open={isBookingOpen} onOpenChange={setIsBookingOpen}>
             <DialogTrigger asChild>
-              <Button variant="default" className="w-full" disabled={!vendor.isAvailable}>
-                Book Service
-              </Button>
+              {requestStatus ? (
+                <Button variant="secondary" className="w-full" disabled>
+                  {requestStatus === 'pending' ? 'Request Pending' : 'Service Accepted'}
+                </Button>
+              ) : (
+                <Button variant="default" className="w-full" disabled={!vendor.isAvailable}>
+                  {vendor.isAvailable ? 'Book Service' : 'Unavailable'}
+                </Button>
+              )}
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>

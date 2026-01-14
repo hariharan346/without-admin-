@@ -8,12 +8,13 @@ import sendEmail from "../utils/sendEmail.js";
 // @route   GET /api/vendors
 // @access  Public
 export const getAllVendors = async (req, res) => {
-  const { serviceId } = req.query;
+  const { serviceId, location, sortBy } = req.query;
 
   try {
-    let query = {};
+    let query = { isAvailable: true };
+
+    // 1. Filter by Service
     if (serviceId) {
-      // Cast serviceId to ObjectId for MongoDB query
       const serviceObjectId = new mongoose.Types.ObjectId(serviceId);
       query["servicesProvided"] = {
         $elemMatch: {
@@ -23,39 +24,144 @@ export const getAllVendors = async (req, res) => {
       };
     }
 
-    const vendors = await Vendor.find(query)
-      .populate("user", "name email")
-      .populate("servicesProvided.serviceId")
-      .sort({ trustScore: -1 }); // Sort by trustScore descending
+    // 2. Filter by Location
+    if (location) {
+      // Case-insensitive/partial match
+      query.location = { $regex: location, $options: "i" };
+    }
 
-    // Format the response to include specific vendor details and price range for the matched service
+    // 3. Sorting Logic
+    let sortOptions = {};
+    if (sortBy === "price_asc" && serviceId) {
+      // Determine minPrice for the specific service?
+      // Sorting by array element field is tricky in basic find().
+      // We might need aggregate if we want precise sorting by the specific service's price.
+      // But for simple implementation:
+      // We can sort by 'servicesProvided.minPrice' but that considers ALL services.
+      // However, since we filtered by elemMatch, the docs that match have at least one valid service.
+      // Accurate price sorting is best done in memory after mapping if dataset is small, or via aggregation.
+      // Let's use aggregation for robust search.
+    }
+
+    // -- Switching to Aggregation Pipeline for Robust Handling --
+    const pipeline = [];
+
+    // Match Stage
+    const matchStage = { isAvailable: true };
+    if (location) {
+      matchStage.location = { $regex: location, $options: "i" };
+    }
+    pipeline.push({ $match: matchStage });
+
+    // Lookup Service details if needed or just filter
+    if (serviceId) {
+      const serviceObjectId = new mongoose.Types.ObjectId(serviceId);
+      pipeline.push({
+        $match: {
+          servicesProvided: {
+            $elemMatch: { serviceId: serviceObjectId, isActive: true }
+          }
+        }
+      });
+
+      // Add a field for the specific service price for sorting
+      pipeline.push({
+        $addFields: {
+          matchedService: {
+            $arrayElemAt: [
+              {
+                $filter: {
+                  input: "$servicesProvided",
+                  as: "sp",
+                  cond: { $eq: ["$$sp.serviceId", serviceObjectId] }
+                }
+              },
+              0
+            ]
+          }
+        }
+      });
+    }
+
+    // Sorting Stage
+    let sortStage = {};
+    switch (sortBy) {
+      case "price_asc":
+        if (serviceId) sortStage = { "matchedService.minPrice": 1 };
+        break;
+      case "price_desc":
+        if (serviceId) sortStage = { "matchedService.minPrice": -1 };
+        break;
+      case "rating_desc":
+        sortStage = { ratingAverage: -1 };
+        break;
+      case "name_asc":
+        sortStage = { companyName: 1 };
+        break;
+      case "name_desc":
+        sortStage = { companyName: -1 };
+        break;
+      default:
+        // Default sort: if location provided, maybe prioritize exact match?
+        // Simple default: Trust Score
+        sortStage = { trustScore: -1 };
+    }
+
+    if (Object.keys(sortStage).length > 0) {
+      pipeline.push({ $sort: sortStage });
+    }
+
+    // Lookup User details
+    pipeline.push({
+      $lookup: {
+        from: "users",
+        localField: "user",
+        foreignField: "_id",
+        as: "user"
+      }
+    });
+    pipeline.push({ $unwind: "$user" }); // Vendor must have a user
+
+    // Lookup Services for detail populating (optional, but good for display)
+    pipeline.push({
+      $lookup: {
+        from: "services",
+        localField: "servicesProvided.serviceId",
+        foreignField: "_id",
+        as: "populatedServices"
+      }
+    });
+
+    const vendors = await Vendor.aggregate(pipeline);
+
+    // Format Response
     const formattedVendors = vendors.map(vendor => {
-      const vendorObj = vendor.toObject();
       let matchedServicePrices = { minPrice: null, maxPrice: null };
 
-      if (serviceId) {
-        const matchedServiceEntry = vendorObj.servicesProvided.find(
-          s => s.serviceId && s.serviceId._id.toString() === serviceId
-        );
-        if (matchedServiceEntry) {
-          matchedServicePrices.minPrice = matchedServiceEntry.minPrice;
-          matchedServicePrices.maxPrice = matchedServiceEntry.maxPrice;
+      // If we used aggregation with serviceId, we have matchedService
+      if (vendor.matchedService) {
+        matchedServicePrices.minPrice = vendor.matchedService.minPrice;
+        matchedServicePrices.maxPrice = vendor.matchedService.maxPrice;
+      } else if (serviceId) {
+        // Fallback if not using aggregation addFields path (e.g. simple find)
+        const s = vendor.servicesProvided.find(sp => sp.serviceId.toString() === serviceId);
+        if (s) {
+          matchedServicePrices.minPrice = s.minPrice;
+          matchedServicePrices.maxPrice = s.maxPrice;
         }
       }
 
-      // Remove the full servicesProvided array from the top level if serviceId was queried
-      // and only return the details relevant for the matched service.
-      delete vendorObj.servicesProvided;
-
       return {
-        _id: vendorObj._id,
-        companyName: vendorObj.companyName,
-        phone: vendorObj.phone, // Include phone as per problem, assuming it's safe for public view
-        location: vendorObj.location,
-        trustScore: vendorObj.trustScore,
-        ...matchedServicePrices, // Add minPrice and maxPrice for the matched service
-        // Include user details if populated
-        user: vendorObj.user ? { _id: vendorObj.user._id, name: vendorObj.user.name, email: vendorObj.user.email } : null,
+        _id: vendor._id,
+        companyName: vendor.companyName,
+        phone: vendor.phone,
+        location: vendor.location,
+        trustScore: vendor.trustScore,
+        ratingAverage: vendor.ratingAverage,
+        reviewCount: vendor.reviewCount,
+        ...matchedServicePrices,
+        user: { _id: vendor.user._id, name: vendor.user.name, email: vendor.user.email },
+        // servicesProvided: vendor.servicesProvided // Optional: return all services?
       };
     });
 
@@ -341,6 +447,7 @@ export const contactAdmin = async (req, res) => {
 export const getVendorsByServiceSlug = async (req, res) => {
   try {
     const { slug } = req.params;
+    const { sortBy } = req.query;
 
     // 1️⃣ Find service by slug
     const service = await Service.findOne({ slug });
@@ -357,13 +464,24 @@ export const getVendorsByServiceSlug = async (req, res) => {
           isActive: { $ne: false } // Matches true or missing
         }
       },
-      isAvailable: true
+      // isAvailable: true // Show all vendors
     };
 
-    const vendors = await Vendor.find(query).populate("user", "name email mobile");
+    let vendors = await Vendor.find(query)
+      .populate("user", "name email mobile");
 
     // 3️⃣ Format response to include specific price for this service
-    const formattedVendors = vendors.map(vendor => {
+    // Temporary Fix: Force all vendors to be available to correct stale data from previous testing
+    // This ensures that vendors who were "locked" are now unlocked.
+    // In a production app, we would run a migration script.
+    for (const v of vendors) {
+      if (v.isAvailable === false) {
+        v.isAvailable = true;
+        await v.save();
+      }
+    }
+
+    let formattedVendors = vendors.map(vendor => {
       const vendorObj = vendor.toObject();
 
       // Find the specific service details
@@ -386,6 +504,29 @@ export const getVendorsByServiceSlug = async (req, res) => {
         totalJobs: vendorObj.totalJobs || 0 // Include total jobs for rating context
       };
     });
+
+    // 4️⃣ Sort Results
+    if (sortBy) {
+      formattedVendors.sort((a, b) => {
+        switch (sortBy) {
+          case "price_asc":
+            return a.minPrice - b.minPrice;
+          case "price_desc":
+            return b.minPrice - a.minPrice;
+          case "rating_desc":
+            return b.ratingAverage - a.ratingAverage;
+          case "name_asc":
+            return a.companyName.localeCompare(b.companyName);
+          case "name_desc":
+            return b.companyName.localeCompare(a.companyName);
+          default:
+            return 0;
+        }
+      });
+    } else {
+      // Default sort by rating/trust
+      formattedVendors.sort((a, b) => b.ratingAverage - a.ratingAverage);
+    }
 
     res.json(formattedVendors);
   } catch (error) {

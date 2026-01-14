@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   XCircle,
   Store,
+  Star,
 } from "lucide-react";
 import api from "@/lib/axios";
 
@@ -113,6 +114,18 @@ const VendorProfilePage = () => {
                           </Badge>
                         )}
                       </div>
+                      {/* Rating Display */}
+                      {vendor.ratingAverage > 0 && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <div className="flex items-center text-yellow-500">
+                            <Star className="w-5 h-5 fill-current" />
+                            <span className="font-bold text-lg ml-1">{vendor.ratingAverage.toFixed(1)}</span>
+                          </div>
+                          <span className="text-muted-foreground text-sm">
+                            ({vendor.reviewCount || vendor.totalJobs} {vendor.reviewCount === 1 ? 'Review' : 'Reviews'})
+                          </span>
+                        </div>
+                      )}
                       <p className="text-muted-foreground mt-2 max-w-2xl">
                         {vendor.user.name}
                       </p>
@@ -123,9 +136,8 @@ const VendorProfilePage = () => {
                       {vendor.isAvailable && (
                         <Button asChild variant="hero" size="lg">
                           <Link
-                            to={`/request/vendor/${vendor._id}${
-                              serviceSlug ? `?service=${serviceSlug}` : ""
-                            }`}
+                            to={`/request/vendor/${vendor._id}${serviceSlug ? `?service=${serviceSlug}` : ""
+                              }`}
                           >
                             Request Service
                           </Link>
@@ -199,9 +211,8 @@ const VendorProfilePage = () => {
                       className="w-full mt-6"
                     >
                       <Link
-                        to={`/request/vendor/${vendor._id}${
-                          serviceSlug ? `?service=${serviceSlug}` : ""
-                        }`}
+                        to={`/request/vendor/${vendor._id}${serviceSlug ? `?service=${serviceSlug}` : ""
+                          }`}
                       >
                         Request Service Now
                       </Link>

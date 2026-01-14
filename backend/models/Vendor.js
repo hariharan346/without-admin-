@@ -50,6 +50,11 @@ const vendorSchema = new mongoose.Schema(
       min: 0,
       max: 5,
     },
+    reviewCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     totalJobs: {
       type: Number,
       default: 0,

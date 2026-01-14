@@ -17,24 +17,31 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import api from "@/lib/axios";
+// Helper to fetch user requests (should technically be in a hook/api file but declaring here for now or importing)
+const fetchUserRequests = async () => {
+  const { data } = await api.get("/requests/my");
+  return data;
+};
 
 const fetchServiceBySlug = async (slug) => {
   const { data } = await api.get(`/services/${slug}`);
   return data;
 };
 
-const fetchVendorsByServiceSlug = async (slug) => {
-  const { data } = await api.get(`/services/${slug}/vendors`);
+const fetchVendorsByServiceSlug = async (slug, sortBy) => {
+  const params = sortBy ? { sortBy } : {};
+  const { data } = await api.get(`/services/${slug}/vendors`, { params });
   return data;
 };
 
 const ServicePage = () => {
-  const { serviceSlug } = useParams(); 
+  const { serviceSlug } = useParams();
   const { user, logout } = useAuth();
 
   // Removed showAvailableOnly state and its related filtering logic
   // const [showAvailableOnly, setShowAvailableOnly] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [sortBy, setSortBy] = useState("rating_desc"); // Default sort
 
   const {
     data: service,
@@ -46,15 +53,24 @@ const ServicePage = () => {
     enabled: !!serviceSlug,
   });
 
-const {
-  data: vendors,
-  isLoading: isLoadingVendors,
-  isError: isErrorVendors,
-} = useQuery({
-  queryKey: ["vendors", serviceSlug],
-  queryFn: () => fetchVendorsByServiceSlug(serviceSlug),
-  enabled: !!serviceSlug,
-});
+  // Fetch user requests to determine status per vendor
+  const { data: userRequests } = useQuery({
+    queryKey: ["userRequests"],
+    queryFn: fetchUserRequests,
+    enabled: !!user, // Only fetch if user is logged in
+  });
+
+
+
+  const {
+    data: vendors,
+    isLoading: isLoadingVendors,
+    isError: isErrorVendors,
+  } = useQuery({
+    queryKey: ["vendors", serviceSlug, sortBy],
+    queryFn: () => fetchVendorsByServiceSlug(serviceSlug, sortBy),
+    enabled: !!serviceSlug,
+  });
 
 
   // The filteredVendors useMemo is simplified as frontend should not re-filter
@@ -144,6 +160,23 @@ const {
               </p>
 
               <div className="flex items-center gap-4">
+                <div className="hidden sm:flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Sort by:</span>
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="trustScore">Recommended</SelectItem>
+                      <SelectItem value="price_asc">Price: Low to High</SelectItem>
+                      <SelectItem value="price_desc">Price: High to Low</SelectItem>
+                      <SelectItem value="rating_desc">Rating: High to Low</SelectItem>
+                      <SelectItem value="name_asc">Name: A - Z</SelectItem>
+                      <SelectItem value="name_desc">Name: Z - A</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <Button
                   variant="outline"
                   size="sm"
@@ -156,9 +189,8 @@ const {
 
                 {/* Removed Available Only Switch */}
                 <div
-                  className={`${
-                    showFilters ? "flex" : "hidden"
-                  } sm:flex items-center gap-4`}
+                  className={`${showFilters ? "flex" : "hidden"
+                    } sm:flex items-center gap-4`}
                 >
                   {/* <div className="flex items-center gap-2">
                     <Switch
@@ -183,6 +215,21 @@ const {
                     vendor={vendor}
                     serviceId={service._id} // Pass the actual service._id
                     index={index}
+                    // Determine status: Find request for this vendor that is NOT completed/cancelled
+                    // Determine status: Find request for this vendor that is NOT completed/cancelled
+                    requestStatus={userRequests?.find(r => {
+                      const getVendorId = (v) => v?._id ? v._id.toString() : v?.toString();
+                      const rVendorId = getVendorId(r.vendor) || getVendorId(r.targetedVendor);
+                      const currentVendorId = vendor._id?.toString();
+
+                      const getServiceId = (s) => s?._id ? s._id.toString() : s?.toString();
+                      const rServiceId = getServiceId(r.service);
+                      const currentServiceId = service._id?.toString();
+
+                      return (rVendorId === currentVendorId) &&
+                        (rServiceId === currentServiceId) &&
+                        (r.status === 'pending' || r.status === 'accepted' || r.status === 'under_process');
+                    })?.status}
                   />
                 ))}
               </div>

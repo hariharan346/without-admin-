@@ -10,6 +10,7 @@ import VendorRegisterPage from "./pages/auth/VendorRegisterPage";
 import CustomerDashboard from "./pages/dashboard/CustomerDashboard";
 import VendorDashboard from "./pages/dashboard/VendorDashboard";
 import CategoriesPage from "./pages/CategoriesPage";
+import SearchPage from "./pages/SearchPage";
 import CategoryPage from "./pages/CategoryPage";
 import ServicePage from "./pages/ServicePage";
 import VendorProfilePage from "./pages/VendorProfilePage";
@@ -37,6 +38,7 @@ const App = () => (
         <Route path="/auth/login" element={<LoginPage />} />
         <Route path="/auth/register" element={<RegisterPage />} />
         <Route path="/auth/vendor-register" element={<VendorRegisterPage />} />
+        <Route path="/search" element={<SearchPage />} />
         <Route path="/categories" element={<CategoriesPage />} />
         <Route path="/category/:categoryId" element={<CategoryPage />} />
         <Route path="/service/:serviceSlug" element={<ServicePage />} />

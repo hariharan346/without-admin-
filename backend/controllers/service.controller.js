@@ -1,5 +1,6 @@
 import ServiceCategory from "../models/ServiceCategory.js";
 import Service from "../models/Service.js";
+import Vendor from "../models/Vendor.js";
 import slugify from "../utils/slugify.js";
 
 // @desc    Create a new service category
@@ -270,11 +271,32 @@ export const getServiceBySlug = async (req, res) => {
 // @access  Public
 export const getAllServices = async (req, res) => {
   try {
-    const { categoryId } = req.query;
+    const { categoryId, location } = req.query;
     let query = {};
+
+    if (location) {
+      // Find vendors in this location
+      const vendors = await Vendor.find({
+        location: { $regex: location, $options: "i" },
+        isAvailable: true
+      }).select("servicesProvided");
+
+      // Extract unique service IDs
+      const serviceIds = new Set();
+      vendors.forEach(v => {
+        v.servicesProvided.forEach(sp => {
+          if (sp.isActive) serviceIds.add(sp.serviceId.toString());
+        });
+      });
+
+      // If categoryId is also present, it will just add to the query
+      query._id = { $in: Array.from(serviceIds) };
+    }
+
     if (categoryId) {
       query.category = categoryId;
     }
+
     const services = await Service.find(query);
     res.json(services);
   } catch (error) {

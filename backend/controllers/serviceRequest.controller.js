@@ -1,6 +1,7 @@
 import ServiceRequest from "../models/ServiceRequest.js";
 import Service from "../models/Service.js";
 import Vendor from "../models/Vendor.js"; // Import Vendor model to use for population
+import Review from "../models/Review.js"; // Import Review model
 import { calculateTrustScore } from "./vendor.controller.js"; // Import calculateTrustScore
 
 
@@ -36,6 +37,9 @@ export const createRequest = async (req, res) => {
         return res.status(404).json({ message: "Targeted Vendor not found" });
       }
       requestData.targetedVendor = vendorId;
+      // Mark vendor as unavailable immediately upon targeted booking -- REVERTED
+      // vendor.isAvailable = false; 
+      // await vendor.save();
     }
 
     const request = await ServiceRequest.create(requestData);
@@ -59,6 +63,7 @@ export const getUserRequests = async (req, res) => {
     const requests = await ServiceRequest.find({ user: req.user.id })
       .populate("user", "name email")
       .populate("vendor", "companyName phone location")
+      .populate("targetedVendor", "companyName phone location") // Ensure targetedVendor is populated
       .populate("service", "name description")
       .sort({ createdAt: -1 });
     res.json(requests);
@@ -195,6 +200,7 @@ export const acceptRequest = async (req, res) => {
     // Update vendor's job stats and trust score
     vendorProfile.totalJobs += 1;
     vendorProfile.acceptedJobs += 1;
+    // vendorProfile.isAvailable = false; // REVERTED Global Lock
     await vendorProfile.save();
     await calculateTrustScore(vendorProfile._id);
 
@@ -262,7 +268,9 @@ export const rejectRequest = async (req, res) => {
     if (vendorProfile && vendorProfile.totalJobs !== undefined && vendorProfile.cancelledJobs !== undefined) {
       // Maybe we count declined as cancelled for stats? Or separate? 
       // Using cancelledJobs for now as per previous logic.
+      // Using cancelledJobs for now as per previous logic.
       vendorProfile.cancelledJobs += 1;
+      // vendorProfile.isAvailable = true; // REVERTED
       await vendorProfile.save();
       await calculateTrustScore(vendorProfile._id);
     }
@@ -307,7 +315,13 @@ export const completeRequest = async (req, res) => {
     request.status = "completed";
     await request.save();
 
+    await request.save();
+
+    await request.save();
+
     // Recalculate trust score after completion
+    // vendorProfile.isAvailable = true; // REVERTED
+    await vendorProfile.save();
     await calculateTrustScore(vendorProfile._id);
 
     const populatedRequest = await ServiceRequest.findById(request._id)
@@ -364,6 +378,8 @@ export const userCancelRequest = async (req, res) => {
           vendorProfile.acceptedJobs = Math.max(0, vendorProfile.acceptedJobs - 1);
         }
         vendorProfile.cancelledJobs += 1;
+        vendorProfile.cancelledJobs += 1;
+        // vendorProfile.isAvailable = true; // REVERTED
         await vendorProfile.save();
         await calculateTrustScore(vendorProfile._id);
       }
@@ -421,6 +437,7 @@ export const vendorCancelRequest = async (req, res) => {
         vendorProfile.acceptedJobs = Math.max(0, vendorProfile.acceptedJobs - 1);
       }
       vendorProfile.cancelledJobs += 1;
+      // vendorProfile.isAvailable = true; // REVERTED
       await vendorProfile.save();
       await calculateTrustScore(vendorProfile._id);
       request.vendor = undefined; // Clear vendor association
@@ -459,29 +476,57 @@ export const rateVendor = async (req, res) => {
       return res.status(400).json({ message: "Only completed requests can be rated" });
     }
 
-    if (request.rating) {
+    // Check if review already exists
+    const existingReview = await Review.findOne({ serviceRequest: request._id });
+    if (existingReview) {
       return res.status(400).json({ message: "You have already rated this service" });
     }
 
+    // Create Review
+    const review = await Review.create({
+      user: req.user.id,
+      vendor: request.vendor,
+      serviceRequest: request._id,
+      rating,
+      comment,
+    });
+
+    // Update Request to mark as rated (legacy support/easy check)
     request.rating = rating;
-    // Optionally store comment if schema allows, schema update needed for comment
     await request.save();
 
+    // Recalculate Vendor Stats
     const vendorProfile = await Vendor.findById(request.vendor);
     if (vendorProfile) {
-      // Calculate new average
-      // Simple approach: Moving Average
-      const ratedRequests = await ServiceRequest.find({ vendor: vendorProfile._id, rating: { $ne: null } });
-      const ratingSum = ratedRequests.reduce((acc, curr) => acc + curr.rating, 0);
-      const ratingCount = ratedRequests.length;
+      // Aggregate ratings
+      const stats = await Review.aggregate([
+        { $match: { vendor: vendorProfile._id } },
+        {
+          $group: {
+            _id: "$vendor",
+            avgRating: { $avg: "$rating" },
+            numReviews: { $sum: 1 },
+          },
+        },
+      ]);
 
-      vendorProfile.ratingAverage = ratingSum / ratingCount;
+      if (stats.length > 0) {
+        vendorProfile.ratingAverage = stats[0].avgRating;
+        vendorProfile.reviewCount = stats[0].numReviews;
+      } else {
+        vendorProfile.ratingAverage = 0;
+        vendorProfile.reviewCount = 0;
+      }
+
       await vendorProfile.save();
       await calculateTrustScore(vendorProfile._id);
     }
 
-    res.json({ message: "Rating submitted successfully", request });
+    res.json({ message: "Rating submitted successfully", review });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ message: "You have already rated this service" });
+    }
     res.status(500).json({ message: error.message });
   }
 };

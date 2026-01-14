@@ -24,6 +24,7 @@ const router = express.Router();
 router.post("/", protect, createRequest);
 router.get("/my", protect, getUserRequests);
 router.patch("/:id/user-cancel", protect, userCancelRequest);
+router.post("/:id/rate", protect, rateVendor);
 
 /**
  * VENDOR ROUTES

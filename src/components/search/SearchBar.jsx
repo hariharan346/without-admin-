@@ -23,17 +23,18 @@ export const SearchBar = () => {
 
   const filteredServices = services
     ? services.filter((s) =>
-        s.name.toLowerCase().includes(query.toLowerCase())
-      )
+      s.name.toLowerCase().includes(query.toLowerCase())
+    )
     : [];
 
   const handleSearch = (e) => {
     e.preventDefault();
-    if (query.trim()) {
-      const matchedService = services.find(
-        (s) => s.name.toLowerCase() === query.toLowerCase()
+    if (query.trim() || location.trim()) {
+      const matchedService = services?.find(
+        (s) => s.name.toLowerCase() === query.trim().toLowerCase()
       );
-      if (matchedService) {
+
+      if (matchedService && !location.trim()) {
         navigate(`/service/${matchedService.slug}`);
       } else {
         navigate(
@@ -45,9 +46,9 @@ export const SearchBar = () => {
     }
   };
 
-  const handleSuggestionClick = (serviceSlug) => {
+  const handleSuggestionClick = (serviceName) => {
+    setQuery(serviceName);
     setShowSuggestions(false);
-    navigate(`/service/${serviceSlug}`);
   };
 
   return (
@@ -76,7 +77,7 @@ export const SearchBar = () => {
                 <button
                   key={service._id}
                   type="button"
-                  onClick={() => handleSuggestionClick(service.slug)}
+                  onClick={() => handleSuggestionClick(service.name)}
                   className="w-full px-4 py-3 text-left hover:bg-muted transition-colors flex items-center gap-3"
                 >
                   <div>

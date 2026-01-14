@@ -236,13 +236,13 @@ const CustomerDashboard = () => {
                             <Button
                               variant="destructive"
                               size="sm"
-                              className="mt-2 block w-full sm:w-auto" // Adjust sizing
+                              className="mt-2 inline-flex items-center gap-1"
                               onClick={(e) => {
                                 e.preventDefault();
                                 setCancelRequestId(request._id);
                               }}
                             >
-                              <XCircle className="w-3 h-3 mr-1" />
+                              <XCircle className="w-3 h-3" />
                               Cancel
                             </Button>
                           )}

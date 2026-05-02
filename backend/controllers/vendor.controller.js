@@ -4,9 +4,6 @@ import Service from "../models/Service.js";
 import User from "../models/User.js";
 import sendEmail from "../utils/sendEmail.js";
 
-// @desc    Get all vendors
-// @route   GET /api/vendors
-// @access  Public
 export const getAllVendors = async (req, res) => {
   const { serviceId, location, sortBy } = req.query;
 
@@ -171,9 +168,6 @@ export const getAllVendors = async (req, res) => {
   }
 };
 
-// @desc    Get a single vendor profile by ID
-// @route   GET /api/vendors/:id
-// @access  Public
 export const getVendorProfile = async (req, res) => {
   try {
     const vendor = await Vendor.findById(req.params.id)
@@ -203,9 +197,6 @@ export const getVendorProfile = async (req, res) => {
   }
 };
 
-// @desc    Toggle vendor availability
-// @route   PUT /api/vendors/availability
-// @access  Vendor
 export const toggleVendorAvailability = async (req, res) => {
   try {
     const vendor = await Vendor.findOne({ user: req.user.id });
@@ -226,9 +217,6 @@ export const toggleVendorAvailability = async (req, res) => {
   }
 };
 
-// @desc    Get services provided by the authenticated vendor
-// @route   GET /api/vendors/me/services
-// @access  Vendor
 export const getVendorServices = async (req, res) => {
   try {
     const vendor = await Vendor.findOne({ user: req.user.id })
@@ -256,9 +244,6 @@ export const getVendorServices = async (req, res) => {
   }
 };
 
-// @desc    Manage vendor services (add, update, delete prices)
-// @route   PUT /api/vendors/me/services
-// @access  Vendor
 export const manageVendorServices = async (req, res) => {
   const { servicesProvided } = req.body; // Expect an array of { serviceId, minPrice, maxPrice }
 
@@ -336,9 +321,6 @@ export const manageVendorServices = async (req, res) => {
   }
 };
 
-// @desc    Delete a service from vendor's provided services
-// @route   DELETE /api/vendors/me/services/:serviceId
-// @access  Vendor
 export const deleteVendorService = async (req, res) => {
   const { serviceId } = req.params;
 
@@ -391,9 +373,6 @@ export const calculateTrustScore = async (vendorId) => {
   return vendor.trustScore;
 };
 
-// @desc    Get vendor's trust score
-// @route   GET /api/vendors/:vendorId/trust-score
-// @access  Public
 export const getVendorTrustScore = async (req, res) => {
   try {
     const vendor = await Vendor.findById(req.params.vendorId).select("trustScore");
@@ -406,9 +385,6 @@ export const getVendorTrustScore = async (req, res) => {
   }
 };
 
-// @desc    Contact admin for support
-// @route   POST /api/vendors/support
-// @access  Vendor
 export const contactAdmin = async (req, res) => {
   const { issueType, description } = req.body;
   const vendor = await Vendor.findOne({ user: req.user.id }).populate("user", "name email");
@@ -441,9 +417,6 @@ export const contactAdmin = async (req, res) => {
   }
 };
 
-// @desc    Get vendors by service slug
-// @route   GET /api/services/:slug/vendors
-// @access  Public
 export const getVendorsByServiceSlug = async (req, res) => {
   try {
     const { slug } = req.params;

@@ -3,9 +3,6 @@ import Service from "../models/Service.js";
 import Vendor from "../models/Vendor.js";
 import slugify from "../utils/slugify.js";
 
-// @desc    Create a new service category
-// @route   POST /api/categories
-// @access  Admin
 export const createCategory = async (req, res) => {
   console.log("--- Create Category ---");
   console.log("Body:", req.body);
@@ -38,9 +35,6 @@ export const createCategory = async (req, res) => {
   }
 };
 
-// @desc    Update a service category
-// @route   PUT /api/categories/:id
-// @access  Admin
 export const updateCategory = async (req, res) => {
   const { id } = req.params;
   const { name, description } = req.body;
@@ -81,9 +75,6 @@ export const updateCategory = async (req, res) => {
   }
 };
 
-// @desc    Delete a service category
-// @route   DELETE /api/categories/:id
-// @access  Admin
 export const deleteCategory = async (req, res) => {
   const { id } = req.params;
 
@@ -103,9 +94,6 @@ export const deleteCategory = async (req, res) => {
   }
 };
 
-// @desc    Get a single service category by slug
-// @route   GET /api/categories/:slug
-// @access  Public
 export const getCategoryBySlug = async (req, res) => {
   const { slug } = req.params;
 
@@ -128,9 +116,6 @@ export const getCategoryBySlug = async (req, res) => {
   }
 };
 
-// @desc    Get all service categories
-// @route   GET /api/categories
-// @access  Public
 export const getAllCategories = async (req, res) => {
   try {
     const categories = await ServiceCategory.find({}).populate("services");
@@ -140,9 +125,6 @@ export const getAllCategories = async (req, res) => {
   }
 };
 
-// @desc    Create a new service
-// @route   POST /api/services
-// @access  Admin
 export const createService = async (req, res) => {
   const { name, description, category: categoryId } = req.body;
   const image = req.file ? `/uploads/services/${req.file.filename}` : null;
@@ -179,9 +161,6 @@ export const createService = async (req, res) => {
   }
 };
 
-// @desc    Update a service
-// @route   PUT /api/services/:id
-// @access  Admin
 export const updateService = async (req, res) => {
   const { id } = req.params;
   const { name, description } = req.body;
@@ -220,9 +199,6 @@ export const updateService = async (req, res) => {
   }
 };
 
-// @desc    Delete a service
-// @route   DELETE /api/services/:id
-// @access  Admin
 export const deleteService = async (req, res) => {
   const { id } = req.params;
 
@@ -246,9 +222,6 @@ export const deleteService = async (req, res) => {
   }
 };
 
-// @desc    Get a single service by slug
-// @route   GET /api/services/:slug
-// @access  Public
 export const getServiceBySlug = async (req, res) => {
   const { slug } = req.params;
 
@@ -266,9 +239,6 @@ export const getServiceBySlug = async (req, res) => {
   }
 };
 
-// @desc    Get all services
-// @route   GET /api/services
-// @access  Public
 export const getAllServices = async (req, res) => {
   try {
     const { categoryId, location } = req.query;

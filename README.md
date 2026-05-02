@@ -1,170 +1,70 @@
-Raise2Solve is a full-stack MERN (MongoDB, Express, React, Node.js) web application that connects customers with verified service providers (vendors).
-It supports role-based authentication, secure dashboards, and admin management for a real-world service booking platform.
+# Raise2Solve
 
-📌 Key Features
-👤 Customer
+Raise2Solve is a full-stack MERN web application built to connect customers with verified service providers (vendors). It handles role-based authentication, secure dashboards, and admin management for a real-world service booking platform.
 
-Register & login securely
+## Features
 
-Browse service categories
+### Customers
+- Register and login securely
+- Browse through various service categories
+- View vendor profiles before booking
+- Raise service requests
+- Track job and request status
 
-View vendor profiles
+### Vendors
+- Vendor registration with business details
+- Custom vendor dashboard
+- Accept and manage service requests
+- Control availability status dynamically
 
-Raise service requests
+### Admin
+- Secure admin portal
+- Manage users and vendors
+- Platform moderation
+- Protected admin routes
 
-Track job/request status
+## Authentication & Security
+- We use JWT-based authentication
+- Role-based access control (User / Vendor / Admin)
+- Passwords are encrypted with bcrypt
 
-🏪 Vendor
+## Tech Stack
+**Frontend:** React (Vite), JavaScript (JSX), Tailwind CSS, shadcn/ui, React Router, Axios
+**Backend:** Node.js, Express.js, MongoDB Atlas, Mongoose, JWT
 
-Vendor registration with business details
+## Running the App Locally
 
-Vendor dashboard
+First, make sure you clone the repository and navigate into the root directory.
 
-Accept & manage service requests
+1. **Set up the backend**
+   Create a `.env` file inside the `backend/` directory with the following variables:
+   ```env
+   PORT=5000
+   MONGO_URI=your_mongodb_atlas_url
+   JWT_SECRET=your_jwt_secret
+   ```
+   Install dependencies and start the server:
+   ```bash
+   cd backend
+   npm install
+   npm run dev
+   ```
 
-Control availability status
+2. **Set up the frontend**
+   Open a new terminal, navigate to the frontend directory, install dependencies, and start the dev server:
+   ```bash
+   cd src
+   npm install
+   npm run dev
+   ```
 
-🛠 Admin
+The backend runs on `http://localhost:5000` and the frontend runs on `http://localhost:8080`.
 
-Secure admin login
+## Future Improvements
+- Add refresh token authentication
+- Build a more detailed admin analytics dashboard
+- Add real-time notifications for job updates
+- Integrate a payment gateway
+- Enable in-app chat between users and vendors
 
-Manage users & vendors
-
-Platform control & moderation
-
-Role-based protected routes
-
-🔐 Authentication & Security
-
-JWT-based authentication
-
-Role-based access control (User / Vendor / Admin)
-
-Protected frontend & backend routes
-
-Password hashing using bcrypt
-
-🧱 Tech Stack
-Frontend
-
-React (Vite)
-
-JavaScript (JSX)
-
-Tailwind CSS
-
-shadcn/ui
-
-React Router
-
-Axios
-
-Backend
-
-Node.js
-
-Express.js
-
-MongoDB Atlas
-
-Mongoose
-
-JWT Authentication
-
-bcryptjs
-
-📂 Project Structure
-raise2solve/
-│
-├── backend/
-│   ├── controllers/
-│   ├── models/
-│   ├── routes/
-│   ├── middleware/
-│   ├── utils/
-│   └── server.js
-│
-├── frontend/
-│   ├── src/
-│   │   ├── pages/
-│   │   ├── components/
-│   │   ├── context/
-│   │   ├── routes/
-│   │   └── lib/
-│   └── main.jsx
-│
-└── README.md
-
-⚙️ Environment Variables
-
-Create a .env file inside backend/:
-
-PORT=5000
-MONGO_URI=your_mongodb_atlas_url
-JWT_SECRET=your_jwt_secret
-
-▶️ Run Locally
-1️⃣ Clone the Repository
-git clone https://github.com/your-username/raise2solve.git
-
-2️⃣ Backend Setup
-cd backend
-npm install
-npm run dev
-
-
-Backend runs on:
-
-http://localhost:5000
-
-3️⃣ Frontend Setup
-cd frontend
-npm install
-npm run dev
-
-
-Frontend runs on:
-
-http://localhost:8080
-
-🔑 Authentication Flow (Simple)
-
-User logs in → JWT token generated
-
-Token stored in browser
-
-Axios automatically sends token in headers
-
-Backend verifies token
-
-Role-based access is enforced
-
-🛡 Role-Based Access
-Role	Access
-User	Customer Dashboard
-Vendor	Vendor Dashboard
-Admin	Admin Dashboard
-📦 Sample API Endpoints
-POST   /api/auth/login
-POST   /api/auth/register
-GET    /api/auth/me
-GET    /api/vendors
-GET    /api/jobs
-
-🚀 Future Enhancements
-
-Refresh token authentication
-
-Admin analytics dashboard
-
-Real-time notifications
-
-Payment gateway integration
-
-In-app chat between users & vendors
-
-👨‍💻 Author
-
-Hariharan
-MERN Stack Developer
-📍 India
+Created by Hariharan.

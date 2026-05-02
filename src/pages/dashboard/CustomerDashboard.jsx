@@ -195,7 +195,6 @@ const CustomerDashboard = () => {
                             {request.vendor?.companyName || "Pending Vendor"}
                           </p>
                           <p className="text-sm mt-2 line-clamp-2">{request.description}</p>
-                          {/* Display OTP for accepted requests */}
                           {request.status === "accepted" && request.otp && (
                             <div className="mt-2 p-2 bg-yellow-100 dark:bg-yellow-900 border border-yellow-200 dark:border-yellow-800 rounded-md inline-block">
                               <p className="text-xs font-bold text-yellow-800 dark:text-yellow-100 uppercase tracking-widest">Job OTP</p>
@@ -203,7 +202,6 @@ const CustomerDashboard = () => {
                               <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">Share this with vendor only after work is done.</p>
                             </div>
                           )}
-                          {/* Decline Reason */}
                           {request.status === "declined" && request.declineReason && (
                             <div className="mt-2 text-sm text-destructive">
                               Reason: {request.declineReason}
@@ -216,7 +214,6 @@ const CustomerDashboard = () => {
                             {format(new Date(request.createdAt), 'PPP p')}
                           </p>
 
-                          {/* Rating Button */}
                           {request.status === "completed" && !request.rating && (
                             <Button
                               variant="outline"
@@ -231,7 +228,6 @@ const CustomerDashboard = () => {
                               Rate Vendor
                             </Button>
                           )}
-                          {/* Cancel Button */}
                           {(request.status === "pending" || request.status === "accepted") && (
                             <Button
                               variant="destructive"
@@ -274,7 +270,6 @@ const CustomerDashboard = () => {
           </div>
         </div>
 
-        {/* Rating Dialog */}
         <Dialog open={!!ratingRequestId} onOpenChange={(open) => !open && setRatingRequestId(null)}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
@@ -294,12 +289,6 @@ const CustomerDashboard = () => {
                   />
                 ))}
               </div>
-              {/* Comment Logic (Optional, Backend update maybe needed for persistence if schema changed) */}
-              {/* <Textarea 
-                        placeholder="Write a review (optional)..." 
-                        value={comment}
-                        onChange={(e) => setComment(e.target.value)}
-                    /> */}
             </div>
             <DialogFooter>
               <Button onClick={handleRateSubmit} disabled={rateMutation.isPending}>
@@ -310,7 +299,6 @@ const CustomerDashboard = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Cancel Request Dialog */}
         <Dialog open={!!cancelRequestId} onOpenChange={(open) => !open && setCancelRequestId(null)}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>

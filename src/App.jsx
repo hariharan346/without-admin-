@@ -33,7 +33,6 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <Routes>
-        {/* PUBLIC */}
         <Route path="/" element={<Index />} />
         <Route path="/auth/login" element={<LoginPage />} />
         <Route path="/auth/register" element={<RegisterPage />} />
@@ -45,8 +44,6 @@ const App = () => (
         <Route path="/vendor/:vendorId" element={<VendorProfilePage />} />
         <Route path="/request/vendor/:vendorId" element={<ServiceRequestPage />} />
         <Route path="/request/:requestId" element={<ServiceRequestDetailsPage />} />
-
-        {/* CUSTOMER */}
         <Route element={<ProtectedRoute role="user" />}>
           <Route
             path="/customer/dashboard"
@@ -55,16 +52,12 @@ const App = () => (
           <Route path="/open-request" element={<OpenServiceRequestPage />} />
           <Route path="/report-vendor/:vendorId" element={<ReportVendorPage />} />
         </Route>
-
-        {/* VENDOR */}
         <Route element={<ProtectedRoute role="vendor" />}>
           <Route
             path="/vendor/dashboard"
             element={<VendorDashboard />}
           />
         </Route>
-
-        {/* ADMIN */}
         <Route path="/admin/login" element={<AdminLoginPage />} />
         <Route element={<AdminProtectedRoute />}>
           <Route path="/admin/dashboard" element={<AdminDashboardPage />} />

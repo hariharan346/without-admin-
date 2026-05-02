@@ -89,7 +89,6 @@ const Index = () => {
       <Navbar user={user} onLogout={logout} />
 
       <main className="flex-1">
-        {/* Hero Section */}
         <section className="relative py-16 lg:py-24 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-hero" />
           <div className="absolute top-0 right-0 w-1/2 h-full opacity-30">
@@ -150,7 +149,6 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Stats */}
         <section className="py-12 bg-card border-y border-border">
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -175,7 +173,6 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Categories */}
         <section className="py-16 lg:py-20">
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
@@ -211,7 +208,6 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Features */}
         <section className="py-16 lg:py-20 bg-muted/50">
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
@@ -246,7 +242,6 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Top Vendors */}
         <section className="py-16 lg:py-20">
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
@@ -301,7 +296,6 @@ const Index = () => {
           </div>
         </section>
 
-        {/* CTA */}
         <section className="py-16 lg:py-20 bg-gradient-primary">
           <div className="container mx-auto px-4 text-center">
             <h2 className="text-3xl md:text-4xl font-bold text-primary-foreground mb-4">

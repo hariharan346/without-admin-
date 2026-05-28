@@ -67,4 +67,4 @@ The backend runs on `http://localhost:5000` and the frontend runs on `http://loc
 - Integrate a payment gateway
 - Enable in-app chat between users and vendors
 
-Created by Hariharan.
+Created by Hariharan.# e2e-production-k8

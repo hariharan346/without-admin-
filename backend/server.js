@@ -20,13 +20,29 @@ connectDB();
 const app = express();
 
 const allowedOrigins = [
-  "http://localhost:8080",
-  "http://localhost:8081",
-  "http://localhost:3000",
-  "http://localhost:5173",
-];
+  'http://localhost:8080',
+  'http://localhost:5173',
+  'https://your-domain.com',        // <- your real domain or EC2 IP
+  process.env.FRONTEND_URL,         // <- set via env var in k8s
+].filter(Boolean);
 
-app.use(cors());
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) callback(null, true);
+    else callback(new Error('CORS blocked: ' + origin));
+  },
+  credentials: true,
+}));
+
+// Health check — required by Kubernetes liveness/readiness probes
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    service: 'raise2slove-backend',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+  });
+});
 
 app.use(express.json());
 
